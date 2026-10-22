@@ -1,0 +1,1421 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>HeatPump Designer Pro</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: instrument-panel workspace. Inputs rail on the left, results workbench on the right. Cold blue = heat source, copper = heat delivered. */
+:root{
+  --bg:#EEF1F4; --panel:#FFFFFF; --panel2:#F6F8FA; --ink:#13202A; --muted:#5A6A77; --line:#D3DBE2;
+  --hot:#C24E1C; --hot-soft:#F7E4DA; --cold:#1B6B88; --cold-soft:#DCEBF1;
+  --ok:#2C7A4B; --ok-soft:#DDF0E4; --warn:#9A6A12; --warn-soft:#F7EBCB; --bad:#B02E2A; --bad-soft:#F7DEDC;
+  --display:"Barlow Semi Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"Barlow",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,"SF Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0E1418; --panel:#161F26; --panel2:#1B262E; --ink:#E5ECF1; --muted:#93A4B0; --line:#2B3841;
+  --hot:#F28A55; --hot-soft:#3A2418; --cold:#62B9D6; --cold-soft:#17303A;
+  --ok:#5DBB82; --ok-soft:#173023; --warn:#E0B04C; --warn-soft:#352B12; --bad:#F0736E; --bad-soft:#3A1A19; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0E1418; --panel:#161F26; --panel2:#1B262E; --ink:#E5ECF1; --muted:#93A4B0; --line:#2B3841;
+  --hot:#F28A55; --hot-soft:#3A2418; --cold:#62B9D6; --cold-soft:#17303A;
+  --ok:#5DBB82; --ok-soft:#173023; --warn:#E0B04C; --warn-soft:#352B12; --bad:#F0736E; --bad-soft:#3A1A19; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font:15px/1.5 var(--body);padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:18px 40px}
+.wrap{max-width:1320px;margin:0 auto}
+h1,h2,h3{font-family:var(--display);margin:0;text-wrap:balance}
+header{display:flex;flex-wrap:wrap;gap:12px 24px;align-items:flex-end;justify-content:space-between;padding-bottom:14px;border-bottom:2px solid var(--ink);margin-bottom:16px}
+h1{font-size:30px;font-weight:700;letter-spacing:-.01em;line-height:1.05}
+.sub{color:var(--muted);font-size:14px;margin-top:4px;max-width:60ch}
+.preset{display:flex;flex-direction:column;gap:4px;min-width:min(100%,360px)}
+.preset span{font:500 11px var(--mono);letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+select,input[type=number]{font:14px var(--mono);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:6px 8px;min-width:0;width:100%}
+select{font-family:var(--body);font-size:14px}
+select:focus-visible,input:focus-visible,button:focus-visible,summary:focus-visible{outline:2px solid var(--cold);outline-offset:1px}
+.grid{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:1000px){.grid{grid-template-columns:350px minmax(0,1fr);align-items:start}}
+.rail{display:flex;flex-direction:column;gap:8px}
+details{background:var(--panel);border:1px solid var(--line);border-radius:6px}
+summary{cursor:pointer;padding:10px 12px;font:600 15px var(--display);letter-spacing:.02em;text-transform:uppercase;list-style:none;display:flex;justify-content:space-between;align-items:center}
+summary::-webkit-details-marker{display:none}
+summary::after{content:"+";font:500 16px var(--mono);color:var(--muted)}
+details[open] summary::after{content:"–"}
+.fields{padding:2px 12px 12px;display:flex;flex-direction:column;gap:8px}
+.f{display:grid;grid-template-columns:minmax(0,1fr) 128px;gap:8px;align-items:center;font-size:14px}
+.f>span:first-child{color:var(--ink);line-height:1.25}
+.ctl{display:flex;align-items:center;gap:6px}
+.ctl em{font:12px var(--mono);color:var(--muted);font-style:normal;min-width:30px}
+.chk{display:flex;gap:8px;align-items:center;font-size:14px}
+.chk input{width:16px;height:16px;accent-color:var(--hot)}
+.kpis{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin-bottom:12px}
+.kpi{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:10px 12px;min-width:0}
+.kpi b{display:block;font:500 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:500}
+.kpi strong{display:block;font:700 28px/1.15 var(--display);margin-top:2px;font-variant-numeric:tabular-nums}
+.kpi small{display:block;color:var(--muted);font-size:12.5px;line-height:1.3;margin-top:2px}
+.kpi.hot strong{color:var(--hot)} .kpi.cold strong{color:var(--cold)}
+.msgs{display:flex;flex-direction:column;gap:6px;margin-bottom:12px}
+.msg{padding:8px 12px;border-radius:4px;font-size:14px;border-left:4px solid}
+.msg.warn{background:var(--warn-soft);border-color:var(--warn)} .msg.bad{background:var(--bad-soft);border-color:var(--bad)} .msg.ok{background:var(--ok-soft);border-color:var(--ok)}
+.tabs{display:flex;flex-wrap:wrap;gap:2px;border-bottom:1px solid var(--line);margin-bottom:12px}
+.tabs button{font:600 14px var(--display);letter-spacing:.03em;text-transform:uppercase;background:none;border:0;border-bottom:3px solid transparent;color:var(--muted);padding:8px 12px;cursor:pointer}
+.tabs button[aria-selected=true]{color:var(--ink);border-color:var(--hot)}
+.tabs button:hover{color:var(--ink)}
+.pane{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px;display:flex;flex-direction:column;gap:16px;min-width:0}
+.pane h3{font-size:17px;text-transform:uppercase;letter-spacing:.03em;margin-bottom:6px}
+.pane p.note{margin:0;color:var(--muted);font-size:13.5px}
+.twocol{display:grid;gap:16px;grid-template-columns:repeat(auto-fit,minmax(min(100%,420px),1fr))}
+.scroll{overflow-x:auto;max-width:100%}
+table{border-collapse:collapse;width:100%;font-size:13.5px}
+th{font:500 11px var(--mono);letter-spacing:.04em;text-transform:uppercase;color:var(--muted);text-align:right;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:6px 8px;border-bottom:1px solid var(--line);text-align:right;font:13px var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+th:first-child,td:first-child,th.l,td.l{text-align:left}
+td.l{font-family:var(--body);white-space:normal}
+tr.cur td{background:var(--hot-soft)}
+tr.tot td{font-weight:500;border-top:2px solid var(--ink)}
+.metrics{display:grid;gap:0 24px;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr))}
+.m{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dotted var(--line);font-size:14px}
+.m span:last-child{font:500 13px var(--mono);font-variant-numeric:tabular-nums;text-align:right}
+.bal{display:flex;height:38px;border-radius:4px;overflow:hidden;font:500 12px var(--mono);color:#fff}
+.bal div{display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;min-width:0;padding:0 6px}
+.bal .c{background:var(--cold)} .bal .w{background:var(--hot)}
+.bal-cap{display:flex;justify-content:space-between;font:12px var(--mono);color:var(--muted);margin-top:4px;gap:8px;flex-wrap:wrap}
+svg.plot{width:100%;height:auto;display:block;max-width:100%}
+svg.plot text{font:11px var(--mono);fill:var(--muted)}
+svg.plot .gl{stroke:var(--line);stroke-width:1}
+svg.plot .axl{stroke:var(--muted);stroke-width:1}
+svg.plot .lb{fill:var(--ink);font:500 12px var(--mono)}
+svg.plot .lgt{fill:var(--ink);font:12px var(--body)}
+.ln{fill:none;stroke-width:2;stroke-linejoin:round;stroke-linecap:round}
+.l-hot{stroke:var(--hot)} .l-cold{stroke:var(--cold)} .l-mut{stroke:var(--muted)} .l-ink{stroke:var(--ink)}
+.dash{stroke-dasharray:6 4}
+.fill-hot{fill:var(--hot)} .fill-cold{fill:var(--cold)}
+.btnrow{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+button.b{font:600 14px var(--display);letter-spacing:.03em;text-transform:uppercase;background:var(--ink);color:var(--bg);border:0;border-radius:4px;padding:8px 14px;cursor:pointer}
+button.b.sec{background:var(--panel2);color:var(--ink);border:1px solid var(--line)}
+button.b:hover{filter:brightness(1.12)}
+button.sm{font:600 12px var(--display);letter-spacing:.03em;text-transform:uppercase;background:var(--panel2);color:var(--ink);border:1px solid var(--line);border-radius:4px;padding:3px 9px;cursor:pointer}
+.pill{display:inline-block;font:500 11px var(--mono);padding:2px 7px;border-radius:10px;border:1px solid var(--line)}
+.pill.ok{background:var(--ok-soft);color:var(--ok);border-color:transparent} .pill.bad{background:var(--bad-soft);color:var(--bad);border-color:transparent} .pill.warn{background:var(--warn-soft);color:var(--warn);border-color:transparent}
+.bar{display:inline-block;height:8px;background:var(--cold);border-radius:2px;vertical-align:middle}
+textarea{width:100%;min-height:260px;font:12.5px/1.5 var(--mono);color:var(--ink);background:var(--panel2);border:1px solid var(--line);border-radius:4px;padding:10px}
+.sel2{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end}
+.sel2 label{display:flex;flex-direction:column;gap:3px;font:500 11px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);min-width:min(100%,260px)}
+.foot{margin-top:18px;color:var(--muted);font-size:13px;max-width:110ch}
+.stale{opacity:.45}
+.mvlay{display:grid;gap:16px;grid-template-columns:minmax(0,1fr)}
+@media (min-width:900px){.mvlay{grid-template-columns:330px minmax(0,1fr);align-items:start}}
+.mvform{display:flex;flex-direction:column;gap:8px}
+input[type=text]{font:14px var(--body);color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:7px 9px;min-width:0;width:min(100%,320px)}
+tr.sel td{background:var(--cold-soft)}
+.lnk{background:none;border:0;color:var(--cold);cursor:pointer;font:inherit;padding:0;text-decoration:underline}
+[hidden]{display:none!important}
+@media (max-width:520px){.f{grid-template-columns:minmax(0,1fr) 112px} h1{font-size:25px}}
+</style>
+
+<div class="wrap">
+<header>
+  <div>
+    <h1>HeatPump Designer Pro</h1>
+    <p class="sub">Industrial heat pump design, waste-heat recovery, heat exchanger sizing and economics. Every figure is calculated live from your inputs.</p>
+  </div>
+  <label class="preset"><span>Application preset</span>
+    <select id="preset"></select>
+  </label>
+</header>
+
+<div class="grid">
+  <aside class="rail" id="rail"></aside>
+  <main>
+    <div class="kpis" id="kpis"></div>
+    <div class="msgs" id="msgs" aria-live="polite"></div>
+    <div class="tabs" role="tablist" id="tabs"></div>
+
+    <section class="pane" id="p_cycle" role="tabpanel">
+      <div>
+        <h3>Energy balance</h3>
+        <div class="bal" id="bal"></div>
+        <div class="bal-cap" id="balcap"></div>
+      </div>
+      <div><h3>Refrigerant state points</h3><div class="scroll" id="states"></div></div>
+      <div><h3>Cycle results</h3><div class="metrics" id="metrics"></div></div>
+    </section>
+
+    <section class="pane" id="p_diag" role="tabpanel" hidden>
+      <div class="twocol">
+        <div><h3>Pressure–enthalpy diagram</h3><div id="ph"></div></div>
+        <div><h3>Temperature–entropy diagram</h3><div id="ts"></div></div>
+      </div>
+      <p class="note">Numbers mark the state points in the table. The dome is the saturation envelope of the selected refrigerant. Dashed grey: isentropic compression for reference. Dashed blue (economizer cycles): the intermediate vapour stream joining the compressor.</p>
+    </section>
+
+    <section class="pane" id="p_hx" role="tabpanel" hidden>
+      <div><h3>Heat exchanger zones</h3><div class="scroll" id="zones"></div>
+        <p class="note" id="hxnote" style="margin-top:8px"></p></div>
+      <div class="twocol">
+        <div><h3>Evaporator temperature profile</h3><div id="pe"></div></div>
+        <div><h3>Condenser temperature profile</h3><div id="pc"></div></div>
+      </div>
+    </section>
+
+    <section class="pane" id="p_econ" role="tabpanel" hidden>
+      <div class="kpis" id="ekpis" style="margin:0"></div>
+      <div class="twocol">
+        <div><h3>Capital cost</h3><div class="scroll" id="capex"></div></div>
+        <div><h3>Heat cost comparison</h3><div id="heatcost" class="metrics" style="grid-template-columns:1fr"></div></div>
+      </div>
+      <div><h3>Cumulative cash flow</h3><div id="cash"></div></div>
+    </section>
+
+    <section class="pane" id="p_cmp" role="tabpanel" hidden>
+      <div><h3>Cycle configuration at your operating conditions</h3>
+        <p class="note" style="margin-bottom:8px">The same refrigerant, temperatures, efficiencies and prices, run as a single-stage, two-stage flash tank and subcooler economizer cycle. The intermediate pressure is optimised for each economizer design.</p>
+        <div class="scroll" id="cyccmp"></div></div>
+      <div><h3>Refrigerant comparison at your operating conditions</h3>
+        <p class="note" style="margin-bottom:8px">Every refrigerant is run through the same cycle, limits and economics. Choose a row to switch to it. Fluids that compress into the wet region are re-run with a 0.5 effectiveness internal heat exchanger.</p>
+        <div class="scroll" id="cmp"></div></div>
+    </section>
+
+    <section class="pane" id="p_opt" role="tabpanel" hidden>
+      <div>
+        <h3>Sensitivity</h3>
+        <div class="sel2"><label>Vary<select id="swvar"></select></label></div>
+      </div>
+      <div class="twocol">
+        <div><h3>Heating COP</h3><div id="sw1"></div></div>
+        <div><h3>Net present value</h3><div id="sw2"></div></div>
+      </div>
+      <div>
+        <h3>Auto-optimise</h3>
+        <p class="note" style="margin-bottom:8px">Searches approach temperatures, subcooling, superheat and internal heat exchanger use for the highest NPV on the selected cycle, keeping all pressure, temperature and heat exchanger limits. Economizer cycles use a coarser grid.</p>
+        <div class="btnrow"><button class="b" id="optbtn">Run optimiser</button><span id="optmsg" class="note"></span></div>
+        <div class="scroll" id="optres" style="margin-top:10px"></div>
+      </div>
+    </section>
+
+    <section class="pane" id="p_mvr" role="tabpanel" hidden>
+      <p class="note">Mechanical vapour recompression for an evaporator body, such as a juice or syrup effect. The vapour boiled off is compressed to a saturation temperature above the boiling liquid and condensed in the same body, so most of its latent heat is reused. Calculated here on its own inputs, separate from the heat pump on the left.</p>
+      <div class="mvlay">
+        <div class="mvform" id="mvform"></div>
+        <div style="display:flex;flex-direction:column;gap:16px;min-width:0">
+          <div class="kpis" id="mvkpis" style="margin:0"></div>
+          <div id="mvmsgs" class="msgs" style="margin:0"></div>
+          <div class="twocol">
+            <div><h3>Steam states</h3><div class="scroll" id="mvstates"></div></div>
+            <div><h3>Energy and cost against existing steam</h3><div class="scroll" id="mvcmp"></div></div>
+          </div>
+          <div class="twocol">
+            <div><h3>Compression path, temperature–entropy</h3><div id="mvts"></div></div>
+            <div><h3>Cumulative cash flow</h3><div id="mvcash"></div></div>
+          </div>
+          <div class="twocol">
+            <div><h3>Specific power against steam–liquid ΔT</h3><div id="mvsw1"></div></div>
+            <div><h3>NPV against steam–liquid ΔT</h3><div id="mvsw2"></div></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane" id="p_prj" role="tabpanel" hidden>
+      <div>
+        <h3>Save this design</h3>
+        <p class="note" style="margin-bottom:8px">Stores every input of the heat pump and MVR tabs under a name. Projects stay in this browser on this device. Use Export to keep a file or move them elsewhere.</p>
+        <div class="btnrow"><input type="text" id="prjname" placeholder="Project name" maxlength="60" aria-label="Project name"><button class="b" id="prjsave">Save project</button><button class="b sec" id="prjexp">Export all</button><label class="b sec" style="cursor:pointer" id="prjimplbl">Import<input type="file" id="prjimp" accept=".json,application/json" hidden></label><span class="note" id="prjmsg"></span></div>
+      </div>
+      <div><h3>Saved projects</h3><div class="scroll" id="prjlist"></div></div>
+    </section>
+
+    <section class="pane" id="p_rep" role="tabpanel" hidden>
+      <div class="btnrow" id="repbtns">
+        <button class="b" id="dlcsv">Download CSV</button>
+        <button class="b sec" id="dlhtml">Download HTML report</button>
+        <button class="b sec" id="cpy">Copy text</button>
+        <span class="note" id="repmsg"></span>
+      </div>
+      <textarea id="reptxt" readonly aria-label="Design report text"></textarea>
+    </section>
+  </main>
+</div>
+
+<p class="foot">Preliminary design tool. Refrigerant properties come from the Peng–Robinson equation of state with estimated ideal-gas heat capacities, which is typically within a few percent for pressures and 3 to 10 percent for latent heat near high reduced temperatures. Compression is adiabatic with a fixed isentropic efficiency per stage, the economizer vapour is taken as saturated, pressure drops are ignored, and costs, fuel prices and emission factors are editable assumptions. Confirm with REFPROP or CoolProp and manufacturer data before purchase.</p>
+</div>
+
+<script>
+"use strict";
+const RG = 8.314462618, T0 = 273.15, P0 = 101325;
+
+const REFS = {
+  R134a:      { n: "R134a",       Tc: 374.21, Pc: 4.0593e6, w: 0.3268, M: 102.032, c0: 86.7,  c1: 0.20, gwp: 1300, saf: "A1",  note: "Common, medium temperature" },
+  R245fa:     { n: "R245fa",      Tc: 427.16, Pc: 3.651e6,  w: 0.3776, M: 134.048, c0: 120.0, c1: 0.23, gwp: 858,  saf: "B1",  note: "High temperature, low pressure" },
+  "R1233zd(E)": { n: "R1233zd(E)", Tc: 439.60, Pc: 3.6237e6, w: 0.3025, M: 130.50, c0: 111.0, c1: 0.22, gwp: 1,    saf: "A1",  note: "Low GWP replacement for R245fa" },
+  "R1234ze(E)": { n: "R1234ze(E)", Tc: 382.52, Pc: 3.6363e6, w: 0.3130, M: 114.04, c0: 93.5,  c1: 0.20, gwp: 1,    saf: "A2L", note: "Low GWP, up to about 90 C sink" },
+  R1234yf:    { n: "R1234yf",     Tc: 367.85, Pc: 3.3822e6, w: 0.2760, M: 114.04, c0: 96.9,  c1: 0.20, gwp: 1,    saf: "A2L", note: "Low GWP, medium temperature" },
+  "R1336mzz(Z)": { n: "R1336mzz(Z)", Tc: 444.50, Pc: 2.903e6,  w: 0.3860, M: 164.06, c0: 155.0, c1: 0.30, gwp: 2,    saf: "A1",  note: "Very high temperature, approximate data" },
+  R600a:      { n: "R600a",       Tc: 407.81, Pc: 3.629e6,  w: 0.1840, M: 58.122,  c0: 96.5,  c1: 0.33, gwp: 3,    saf: "A3",  note: "Isobutane, flammable" },
+  R600:       { n: "R600",        Tc: 425.12, Pc: 3.796e6,  w: 0.2000, M: 58.122,  c0: 98.5,  c1: 0.32, gwp: 4,    saf: "A3",  note: "Butane, flammable" },
+  R290:       { n: "R290",        Tc: 369.83, Pc: 4.248e6,  w: 0.1520, M: 44.096,  c0: 73.6,  c1: 0.25, gwp: 3,    saf: "A3",  note: "Propane, flammable" },
+  R717:       { n: "R717",        Tc: 405.40, Pc: 11.333e6, w: 0.2526, M: 17.031,  c0: 35.7,  c1: 0.014, gwp: 0,   saf: "B2L", note: "Ammonia, toxic, high pressure" }
+};
+
+function idealAB(f) { return { A: f.c0 - f.c1 * 300, B: f.c1 }; }
+function idealH(f, T) { const { A, B } = idealAB(f); return A * (T - T0) + B / 2 * (T * T - T0 * T0); }
+function idealS(f, T, P) { const { A, B } = idealAB(f); return A * Math.log(T / T0) + B * (T - T0) - RG * Math.log(P / P0); }
+
+function prParams(f, T) {
+  const kap = 0.37464 + 1.54226 * f.w - 0.26992 * f.w * f.w;
+  const Tr = T / f.Tc;
+  const al = Math.pow(1 + kap * (1 - Math.sqrt(Tr)), 2);
+  const ac = 0.45724 * RG * RG * f.Tc * f.Tc / f.Pc;
+  const dal = -kap * Math.sqrt(al) / Math.sqrt(T * f.Tc);
+  return { a: ac * al, da: ac * dal, b: 0.07780 * RG * f.Tc / f.Pc };
+}
+
+function zRoots(A, B) {
+  const c2 = -(1 - B), c1 = A - 3 * B * B - 2 * B, c0 = -(A * B - B * B - B * B * B);
+  const p = c1 - c2 * c2 / 3, q = 2 * c2 * c2 * c2 / 27 - c2 * c1 / 3 + c0;
+  const sh = -c2 / 3;
+  let ts;
+  const D = q * q / 4 + p * p * p / 27;
+  if (D > 1e-14) {
+    const sD = Math.sqrt(D);
+    ts = [Math.cbrt(-q / 2 + sD) + Math.cbrt(-q / 2 - sD)];
+  } else if (Math.abs(p) < 1e-14) {
+    ts = [Math.cbrt(-q)];
+  } else {
+    const m = 2 * Math.sqrt(-p / 3);
+    let arg = 3 * q / (p * m);
+    arg = Math.max(-1, Math.min(1, arg));
+    const th = Math.acos(arg) / 3;
+    ts = [0, 1, 2].map(k => m * Math.cos(th - 2 * Math.PI * k / 3));
+  }
+  return ts.map(t => t + sh).filter(z => z > B + 1e-12).sort((a, b) => a - b);
+}
+
+const SQ2 = Math.SQRT2;
+function lnPhi(A, B, Z) {
+  return Z - 1 - Math.log(Z - B) - A / (2 * SQ2 * B) * Math.log((Z + (1 + SQ2) * B) / (Z + (1 - SQ2) * B));
+}
+
+// h in kJ/kg, s in kJ/kg/K, v in m3/kg. T in K, P in Pa. ph = "v" or "l"
+function state(f, T, P, ph) {
+  const { a, da, b } = prParams(f, T);
+  const A = a * P / ((RG * T) * (RG * T)), B = b * P / (RG * T);
+  const r = zRoots(A, B);
+  const Z = r.length === 0 ? 1 : (ph === "v" ? r[r.length - 1] : r[0]);
+  const L = Math.log((Z + (1 + SQ2) * B) / (Z + (1 - SQ2) * B));
+  const hd = RG * T * (Z - 1) + (T * da - a) / (2 * SQ2 * b) * L;
+  const sd = RG * Math.log(Z - B) + da / (2 * SQ2 * b) * L;
+  return {
+    T, P, Z,
+    h: (idealH(f, T) + hd) / f.M,
+    s: (idealS(f, T, P) + sd) / f.M,
+    v: Z * RG * T / P / (f.M / 1000),
+    lnphi: lnPhi(A, B, Z)
+  };
+}
+
+function Psat(f, T) {
+  if (T >= f.Tc) return f.Pc;
+  let P = f.Pc * Math.exp(5.373 * (1 + f.w) * (1 - f.Tc / T));
+  const { a, b } = prParams(f, T);
+  for (let i = 0; i < 300; i++) {
+    const A = a * P / ((RG * T) * (RG * T)), B = b * P / (RG * T);
+    const r = zRoots(A, B);
+    if (r.length < 2 || r[r.length - 1] - r[0] < 1e-9) {
+      const z = r.length ? r[0] : 1;
+      P *= z > 0.28 ? 1.08 : 0.92;
+      continue;
+    }
+    const d = lnPhi(A, B, r[0]) - lnPhi(A, B, r[r.length - 1]);
+    P *= Math.exp(d);
+    if (Math.abs(d) < 1e-11) break;
+  }
+  return P;
+}
+
+const satCache = new Map();
+function satProps(f, T) {
+  const key = f.n + "|" + T.toFixed(6);
+  if (satCache.has(key)) return satCache.get(key);
+  const P = Psat(f, T);
+  const l = state(f, T, P, "l"), v = state(f, T, P, "v");
+  const o = { T, P, hl: l.h, hv: v.h, sl: l.s, sv: v.s, vl: l.v, vv: v.v };
+  if (satCache.size > 4000) satCache.clear();
+  satCache.set(key, o);
+  return o;
+}
+
+function solveT(f, P, ph, key, target, lo, hi) {
+  let glo = state(f, lo, P, ph)[key] - target;
+  let ghi = state(f, hi, P, ph)[key] - target;
+  if (glo >= 0) return lo;
+  if (ghi <= 0) return hi;
+  for (let i = 0; i < 70; i++) {
+    const mid = 0.5 * (lo + hi);
+    const g = state(f, mid, P, ph)[key] - target;
+    if (g < 0) lo = mid; else hi = mid;
+    if (hi - lo < 1e-8) break;
+  }
+  return 0.5 * (lo + hi);
+}
+
+// ---------- vapour compression cycle (per kg of refrigerant) ----------
+function cycle(f, p) {
+  const Se = satProps(f, p.Te), Sc = satProps(f, p.Tcd);
+  const Pe = Se.P, Pc = Sc.P;
+  const st1 = state(f, p.Te + p.SH, Pe, "v");
+  const T3 = p.Tcd - p.SC;
+  const st3 = state(f, T3, Pc, "l");
+  let T1b = p.Te + p.SH, st1b = st1, T3b = T3, st3b = st3;
+  if (p.eps > 0 && T3 > T1b + 0.5) {
+    T1b = st1.T + p.eps * (T3 - st1.T);
+    st1b = state(f, T1b, Pe, "v");
+    const dh = st1b.h - st1.h;
+    T3b = solveT(f, Pc, "l", "h", st3.h - dh, 0.45 * f.Tc, T3);
+    st3b = state(f, T3b, Pc, "l");
+  }
+  let h2s, T2s, wetS = false;
+  if (st1b.s < Sc.sv) {
+    const x = (st1b.s - Sc.sl) / (Sc.sv - Sc.sl);
+    h2s = Sc.hl + x * (Sc.hv - Sc.hl); T2s = p.Tcd; wetS = true;
+  } else {
+    T2s = solveT(f, Pc, "v", "s", st1b.s, p.Tcd, p.Tcd + 350);
+    h2s = state(f, T2s, Pc, "v").h;
+  }
+  const h2 = st1b.h + (h2s - st1b.h) / p.eta;
+  let st2, wet2 = false;
+  if (h2 < Sc.hv) {
+    const x = Math.max(0, (h2 - Sc.hl) / (Sc.hv - Sc.hl));
+    st2 = { T: p.Tcd, P: Pc, h: h2, s: Sc.sl + x * (Sc.sv - Sc.sl), v: Sc.vl + x * (Sc.vv - Sc.vl), x };
+    wet2 = true;
+  } else {
+    const T2 = solveT(f, Pc, "v", "h", h2, p.Tcd, p.Tcd + 400);
+    st2 = state(f, T2, Pc, "v");
+  }
+  const h4 = st3b.h;
+  const x4 = (h4 - Se.hl) / (Se.hv - Se.hl);
+  const st4 = { T: p.Te, P: Pe, h: h4, s: Se.sl + x4 * (Se.sv - Se.sl), v: Se.vl + x4 * (Se.vv - Se.vl), x: x4 };
+  const st2s = { T: T2s, P: Pc, h: h2s };
+  const hvc = Sc.hv, hlc = Sc.hl;
+  const q_ds = Math.max(0, h2 - hvc);
+  const q_cn = Math.min(h2, hvc) - hlc;
+  const q_sc = hlc - st3.h;
+  const q_boil = Se.hv - h4;
+  const q_sh = st1.h - Se.hv;
+  return {
+    Se, Sc, Pe, Pc, st1, st1b, st2s, st2, st3, st3b, st4, wetS, wet2,
+    w: h2 - st1b.h, qc: h2 - st3.h, qe: st1.h - h4,
+    q_ds, q_cn, q_sc, q_boil, q_sh, q_ihx: st1b.h - st1.h, x4
+  };
+}
+
+
+// ---------- compression step to a saturation level (used by two-stage / economizer cycles) ----------
+function compressStep(f, Tsat, hin, sin, eta) {
+  const S = satProps(f, Tsat), P = S.P;
+  let h2s, T2s, wetS = false;
+  if (sin < S.sv) {
+    const x = (sin - S.sl) / (S.sv - S.sl);
+    h2s = S.hl + x * (S.hv - S.hl); T2s = Tsat; wetS = true;
+  } else {
+    T2s = solveT(f, P, "v", "s", sin, Tsat, Tsat + 350);
+    h2s = state(f, T2s, P, "v").h;
+  }
+  const h2 = hin + (h2s - hin) / eta;
+  let st, wet = false;
+  if (h2 < S.hv) {
+    const x = Math.max(0, (h2 - S.hl) / (S.hv - S.hl));
+    st = { T: Tsat, P, h: h2, s: S.sl + x * (S.sv - S.sl), v: S.vl + x * (S.vv - S.vl), x }; wet = true;
+  } else {
+    const T2 = solveT(f, P, "v", "h", h2, Tsat, Tsat + 400);
+    st = state(f, T2, P, "v");
+  }
+  return { st, st2s: { T: T2s, P, h: h2s }, wetS, wet };
+}
+
+// Two-stage compression with flash-tank intermediate cooling (type "flash")
+// or single compressor with a subcooler economizer injection port (type "sub").
+// All quantities are per kg of refrigerant through the CONDENSER, so design() can reuse them.
+// fe = evaporator-side flow fraction.
+function cycleEcoAt(f, p, Ti) {
+  const Se = satProps(f, p.Te), Sc = satProps(f, p.Tcd), Si = satProps(f, Ti);
+  const st1 = state(f, p.Te + p.SH, Se.P, "v");
+  const T3 = p.Tcd - p.SC;
+  const st3 = state(f, T3, Sc.P, "l");
+  let fe, h7, stB = st3, minj = 0;
+  if (p.cyc === "flash") {
+    const x6 = (st3.h - Si.hl) / (Si.hv - Si.hl);
+    fe = 1 - x6; h7 = Si.hl;
+    var st6 = { T: Ti, P: Si.P, h: st3.h, x: x6 };
+  } else {
+    const Tb = Math.min(T3, Ti + (p.dTsub || 5));
+    stB = state(f, Tb, Sc.P, "l");
+    const hinj = Si.hv; // injected stream leaves the subcooler as saturated vapour
+    const rinj = (st3.h - stB.h) / (hinj - st3.h);
+    fe = 1 / (1 + rinj); h7 = stB.h; minj = rinj / (1 + rinj);
+  }
+  const lp = compressStep(f, Ti, st1.h, st1.s, p.eta);
+  const hmix = (fe * lp.st.h + (1 - fe) * Si.hv);
+  let stM;
+  if (hmix <= Si.hv) {
+    const x = Math.max(0, (hmix - Si.hl) / (Si.hv - Si.hl));
+    stM = { T: Ti, P: Si.P, h: hmix, s: Si.sl + x * (Si.sv - Si.sl), v: Si.vl + x * (Si.vv - Si.vl), x };
+  } else {
+    const Tm = solveT(f, Si.P, "v", "h", hmix, Ti, Ti + 300);
+    stM = state(f, Tm, Si.P, "v");
+  }
+  const hp = compressStep(f, p.Tcd, stM.h, stM.s, p.eta);
+  const st2 = hp.st, h2 = st2.h;
+  const x4 = (h7 - Se.hl) / (Se.hv - Se.hl);
+  const st4 = { T: p.Te, P: Se.P, h: h7, s: Se.sl + x4 * (Se.sv - Se.sl), v: Se.vl + x4 * (Se.vv - Se.vl), x: x4 };
+  const wLP = fe * (lp.st.h - st1.h), wHP = h2 - stM.h;
+  const hvc = Sc.hv, hlc = Sc.hl;
+  return {
+    Se, Sc, Si, Pe: Se.P, Pc: Sc.P, Pi: Si.P, Ti, st1, st1b: st1, st2s: hp.st2s, st2, st3, st3b: stB, st4,
+    wetS: hp.wetS, wet2: hp.wet || lp.wet,
+    w: wLP + wHP, qc: h2 - st3.h, qe: fe * (st1.h - h7),
+    q_ds: Math.max(0, h2 - hvc), q_cn: Math.min(h2, hvc) - hlc, q_sc: hlc - st3.h,
+    q_boil: fe * (Se.hv - h7), q_sh: fe * (st1.h - Se.hv), q_ihx: 0, x4,
+    fe, minj,
+    eco: { type: p.cyc, Ti, Pi: Si.P, lp: lp.st, lpS: lp.st2s, mix: stM, st6: st6 || null, stB, wLP, wHP, fe, finj: 1 - fe, PRlp: Si.P / Se.P, PRhp: Sc.P / Si.P }
+  };
+}
+function cycleEco(f, p) {
+  if (p.Ti) return cycleEcoAt(f, p, p.Ti);
+  // choose the intermediate saturation temperature that maximises qc/w (golden section on T)
+  let a = p.Te + 3, b = p.Tcd - 3;
+  if (b <= a) return cycleEcoAt(f, p, 0.5 * (p.Te + p.Tcd));
+  const g = 0.6180339887;
+  const ev = T => { const c = cycleEcoAt(f, p, T); return (isFinite(c.w) && c.qc > 0) ? c.w / c.qc : 1e9; };
+  let c1 = b - g * (b - a), c2 = a + g * (b - a), f1 = ev(c1), f2 = ev(c2);
+  for (let i = 0; i < 12; i++) {
+    if (f1 < f2) { b = c2; c2 = c1; f2 = f1; c1 = b - g * (b - a); f1 = ev(c1); }
+    else { a = c1; c1 = c2; f1 = f2; c2 = a + g * (b - a); f2 = ev(c2); }
+  }
+  return cycleEcoAt(f, p, 0.5 * (a + b));
+}
+
+function lmtd(a, b) {
+  if (!(a > 0) || !(b > 0)) return NaN;
+  return Math.abs(a - b) < 1e-6 ? a : (a - b) / Math.log(a / b);
+}
+
+const DEF = {
+  ref: "R1233zd(E)",
+  Qc: 500,
+  Tsi: 70, Tso: 55, cp_s: 4.18,
+  Tki: 75, Tko: 95, cp_k: 4.18,
+  dTe: 5, dTc: 5, SH: 5, SC: 3, eps: 0.0, desup: true, cyc: "single", dTsub: 5,
+  eta: 0.72, eta_em: 0.93, etaV: 0.85, aux: 3,
+  Ue: 2.0, Ush: 0.6, Uds: 0.6, Ucn: 2.0, Usc: 0.8, margin: 10,
+  maxP: 40, maxTd: 150, maxPR: 8,
+  hours: 6000, lf: 90,
+  tariff: 6.5, esc_e: 3, fuel: "gas", fprice: 55, funit: "SCM", fkwh: 9.8, feff: 88, fef: 0.20, esc_f: 4,
+  gridEF: 0.80,
+  chx: 25000, ccomp: 90000, bop: 40, inst: 25, om: 3,
+  rate: 10, life: 15
+};
+
+const FUELS = {
+  coal:    { n: "Coal",                  price: 7500, unit: "tonne", kwh: 5200, eff: 78, ef: 0.34 },
+  gas:     { n: "Natural gas (PNG)",     price: 55,   unit: "SCM",   kwh: 9.8,  eff: 88, ef: 0.20 },
+  fo:      { n: "Furnace oil",           price: 52,   unit: "kg",    kwh: 11.3, eff: 85, ef: 0.27 },
+  biomass: { n: "Biomass briquettes",    price: 7500, unit: "tonne", kwh: 4300, eff: 75, ef: 0 },
+  bagasse: { n: "Bagasse (market value)", price: 2800, unit: "tonne", kwh: 2000, eff: 70, ef: 0 },
+  elec:    { n: "Electric boiler",       price: 6.5,  unit: "kWh",   kwh: 1,    eff: 99, ef: 0.80 }
+};
+
+
+const PRESETS = [
+  { id: "sugar", n: "Sugar factory: condenser water to juice heating", p: { Qc: 800, Tsi: 55, Tso: 42, Tki: 70, Tko: 95, ref: "R1233zd(E)", hours: 4500, lf: 85, fuel: "bagasse", tariff: 5.0 } },
+  { id: "dist", n: "Distillery: spent wash heat to process water", p: { Qc: 1000, Tsi: 68, Tso: 52, Tki: 70, Tko: 92, ref: "R1233zd(E)", hours: 7200, lf: 90, fuel: "biomass", tariff: 6.0 } },
+  { id: "dairy", n: "Dairy: refrigeration heat to CIP and pasteurising", p: { Qc: 400, Tsi: 32, Tso: 22, Tki: 55, Tko: 78, ref: "R1234ze(E)", hours: 7000, lf: 85, fuel: "gas", tariff: 7.0, eps: 0.3 } },
+  { id: "textile", n: "Textile dye house: effluent heat to process water", p: { Qc: 600, Tsi: 48, Tso: 33, Tki: 28, Tko: 75, ref: "R245fa", hours: 6500, lf: 85, fuel: "fo", tariff: 7.0 } },
+  { id: "pharma", n: "Pharmaceutical: cooling water heat to hot water loop", p: { Qc: 300, Tsi: 40, Tso: 33, Tki: 60, Tko: 85, ref: "R1233zd(E)", hours: 8000, lf: 80, fuel: "gas", tariff: 7.5 } },
+  { id: "hvac", n: "HVAC: water source to space heating", p: { Qc: 250, Tsi: 15, Tso: 9, Tki: 40, Tko: 50, ref: "R290", hours: 3000, lf: 70, fuel: "gas", tariff: 8.0, maxP: 30 } },
+  { id: "chem", n: "Chemical plant: high-temperature hot water", p: { Qc: 700, Tsi: 85, Tso: 68, Tki: 110, Tko: 135, ref: "R1336mzz(Z)", hours: 8000, lf: 90, fuel: "gas", tariff: 6.5, eps: 0.5, dTe: 6, dTc: 6, maxTd: 160 } }
+];
+function presetInputs(id) {
+  const pr = PRESETS.find(x => x.id === id);
+  const o = Object.assign({}, DEF, pr.p);
+  const fu = FUELS[o.fuel];
+  if (!pr.p.fprice) { o.fprice = fu.price; o.funit = fu.unit; o.fkwh = fu.kwh; o.feff = fu.eff; o.fef = fu.ef; }
+  if (o.fuel === "elec") o.fprice = o.tariff;
+  return o;
+}
+
+// ---------- full design ----------
+function design(inp, refName) {
+  const f = REFS[refName || inp.ref];
+  const out = { ok: true, warn: [], err: [], f };
+  const K = x => x + 273.15;
+  if (!(inp.Tsi > inp.Tso)) out.err.push("Source inlet temperature must be above its outlet temperature.");
+  if (!(inp.Tko > inp.Tki)) out.err.push("Sink outlet temperature must be above its inlet temperature.");
+  if (out.err.length) { out.ok = false; return out; }
+  const Te = K(inp.Tso) - inp.dTe;
+  let Tcd = K(inp.Tko) + inp.dTc, cyc, m, Qsc, Qcn, Ta, Tb, nearCrit = false;
+  const Ck = inp.Qc / (inp.Tko - inp.Tki);
+  if (Te < 0.4 * f.Tc) { out.ok = false; out.err.push("Evaporating temperature is too low for " + f.n + "."); return out; }
+  for (let it = 0; it < 40; it++) {
+    if (Tcd > f.Tc - 2) { Tcd = f.Tc - 2; nearCrit = true; }
+    const eco = inp.cyc === "flash" || inp.cyc === "sub";
+    cyc = eco ? cycleEco(f, { Te, Tcd, SH: inp.SH, SC: inp.SC, eta: inp.eta, cyc: inp.cyc, dTsub: inp.dTsub }) : cycle(f, { Te, Tcd, SH: inp.SH, SC: inp.SC, eta: inp.eta, eps: inp.eps });
+    m = inp.Qc / cyc.qc;
+    Qsc = m * cyc.q_sc; Qcn = m * cyc.q_cn;
+    Ta = K(inp.Tki) + Qsc / Ck; Tb = Ta + Qcn / Ck;
+    const target = (inp.desup ? Tb : K(inp.Tko)) + inp.dTc;
+    if (Math.abs(target - Tcd) < 0.005) break;
+    Tcd += 0.6 * (target - Tcd);
+  }
+  if (nearCrit || Tcd >= f.Tc - 2) {
+    out.warn.push("Condensing temperature is near the critical point of " + f.n + ". Choose a refrigerant with a higher critical temperature.");
+    out.feasible = false;
+  }
+  const c = cyc; c.fe_ = c.fe === undefined ? 1 : c.fe;
+  const Wsh = m * c.w;
+  const Wel = Wsh / inp.eta_em;
+  const Waux = Wel * inp.aux / 100;
+  const Qe = m * c.qe;
+  const Qds = m * c.q_ds, Qboil = m * c.q_boil, Qsh = m * c.q_sh;
+  // evaporator zones
+  const Cs = Qe / (inp.Tsi - inp.Tso);
+  const Tsb = K(inp.Tso) + Qboil / Cs;
+  const T1 = Te + inp.SH;
+  const zones = [];
+  const addZone = (name, Q, dTh, dTc, U) => {
+    if (Q <= 1e-6) return;
+    const L = lmtd(dTh, dTc);
+    zones.push({ name, Q, dTh, dTc, U, lmtd: L, A: isNaN(L) ? Infinity : Q / (U * L) });
+  };
+  addZone("Evaporator boiling", Qboil, Tsb - Te, K(inp.Tso) - Te, inp.Ue);
+  addZone("Evaporator superheat", Qsh, K(inp.Tsi) - T1, Tsb - Te, inp.Ush);
+  addZone("Condenser subcooling", Qsc, Tcd - Ta, (Tcd - inp.SC) - K(inp.Tki), inp.Usc);
+  addZone("Condenser condensing", Qcn, Tcd - Tb, Tcd - Ta, inp.Ucn);
+  addZone("Condenser desuperheating", Qds, c.st2.T - K(inp.Tko), Tcd - Tb, inp.Uds);
+  const k = 1 + inp.margin / 100;
+  zones.forEach(z => { z.Areq = z.A * k; });
+  const A_e = zones.filter(z => z.name.startsWith("Evap")).reduce((s, z) => s + z.Areq, 0);
+  const A_c = zones.filter(z => z.name.startsWith("Cond")).reduce((s, z) => s + z.Areq, 0);
+  if (zones.some(z => !isFinite(z.Areq))) { out.warn.push("A heat exchanger zone has a temperature cross. Reduce the sink outlet temperature, widen the approach temperatures, or reduce subcooling and superheat."); out.feasible = false; }
+  const Vsuc = m * c.fe_ * c.st1b.v / inp.etaV * 3600;
+  const Wtot = Wel + Waux;
+  const Tlk = (inp.Tko - inp.Tki) / Math.log(K(inp.Tko) / K(inp.Tki));
+  const Tls = (inp.Tsi - inp.Tso) / Math.log(K(inp.Tsi) / K(inp.Tso));
+  const lorenz = Tlk / (Tlk - Tls);
+  const carnot = Tcd / (Tcd - Te);
+  const Pe_bar = c.Pe / 1e5, Pc_bar = c.Pc / 1e5;
+  const PR = c.Pc / c.Pe;
+  const PRs = c.eco ? Math.max(c.eco.PRlp, c.eco.PRhp) : PR;
+  const Td = c.st2.T - 273.15;
+  if (Td > inp.maxTd) out.warn.push("Discharge temperature " + Td.toFixed(0) + " C is above the limit of " + inp.maxTd + " C. Use liquid injection, an economizer, two stages, or a lower pressure ratio.");
+  if (PRs > inp.maxPR) out.warn.push("Pressure ratio " + PRs.toFixed(1) + (c.eco ? " per stage" : "") + " is above " + inp.maxPR + (c.eco ? "." : " for a single stage. Select the two-stage flash or economizer cycle."));
+  if (Pc_bar > inp.maxP) out.warn.push("Condensing pressure " + Pc_bar.toFixed(1) + " bar exceeds the allowable " + inp.maxP + " bar.");
+  if (Pe_bar < 0.9) out.warn.push("Evaporating pressure is below atmospheric (" + Pe_bar.toFixed(2) + " bar). Air ingress and large volume flow are likely.");
+  if (c.wet2) out.warn.push(c.eco ? "A compression stage ends in the wet region. Increase the suction superheat." : "Compressor discharge is wet. Increase superheat or use an internal heat exchanger.");
+  if (c.x4 < 0 || c.x4 > 1) out.warn.push("Expansion state is outside the two-phase region.");
+  const COP = inp.Qc / Wtot;
+  Object.assign(out, {
+    cyc: c, m, Te, Tcd, Qe, Wsh, Wel, Waux, Wtot, COP, COPc: inp.Qc / Wel,
+    lorenz, carnot, eta2: COP / lorenz, eta2c: COP / carnot,
+    Qds, Qcn, Qsc, Qboil, Qsh, Ta, Tb, Tsb, Ck, Cs,
+    msrc: Cs / inp.cp_s, msnk: Ck / inp.cp_k,
+    zones, A_e, A_c, A_tot: A_e + A_c,
+    Vsuc, PR, PRs, Pe_bar, Pc_bar, Td, Tevap_C: Te - 273.15, Tcond_C: Tcd - 273.15,
+    dTsrc: inp.Tsi - inp.Tso, lift: Tcd - Te,
+    vhc: c.qe * 1000 / (c.fe_ * c.st1b.v),
+    cycType: c.eco ? inp.cyc : "single", eco: c.eco || null
+  });
+  if (out.feasible === undefined) out.feasible = true;
+  if (Pc_bar > inp.maxP || PRs > inp.maxPR * 1.25 || Td > inp.maxTd + 15 || c.wet2) out.feasible = false;
+  return out;
+}
+
+
+// ---------- steam / water properties for MVR (IAPWS-IF97 saturation line + correlations) ----------
+const WAT = { Tc: 647.096, M: 18.015, cpv: 2.0 };
+function wPsat(T) { // T in K -> Pa
+  const n = [0.11670521452767e4, -0.72421316703206e6, -0.17073846940092e2, 0.12020824702470e5, -0.32325550322333e7,
+    0.14915108613530e2, -0.48232657361591e4, 0.40511340542057e6, -0.23855557567849, 0.65017534844798e3];
+  const th = T + n[8] / (T - n[9]);
+  const A = th * th + n[0] * th + n[1], B = n[2] * th * th + n[3] * th + n[4], C = n[5] * th * th + n[6] * th + n[7];
+  return Math.pow(2 * C / (-B + Math.sqrt(B * B - 4 * A * C)), 4) * 1e6;
+}
+function wTsat(P) { let lo = 273.2, hi = 640; for (let i = 0; i < 70; i++) { const m = 0.5 * (lo + hi); if (wPsat(m) < P) lo = m; else hi = m; } return 0.5 * (lo + hi); }
+function wHf(T) { const t = T - 273.15; return -0.0617280 + 4.2027187 * t - 5.09387e-4 * t * t + 3.96099e-6 * t * t * t; }
+function wHfg(T) { const t = T - 273.15; return 2498.8194 - 2.29959 * t - 4.42939e-5 * t * t - 1.157446e-5 * t * t * t; }
+function wHg(T) { return wHf(T) + wHfg(T); }
+function wSf(T) { return 4.1868 * Math.log(T / 273.16); }
+function wSg(T) { return wSf(T) + wHfg(T) / T; }
+function wVg(T) { return 8314.46 / WAT.M * T / wPsat(T) * 0.992; }
+
+const MVRDEF = {
+  Evap: 2.5, Feed: 5.0, Tf: 85, cpf: 3.7, Tv: 100, BPE: 3, dTa: 8, SE: 3.5,
+  etac: 0.75, etam: 0.95, Tw: 70, loss: 3, boilerEff: 85, steamP: 3,
+  hours: 4500, lf: 90, tariff: 5.0, fprice: 2800, fkwh: 2000, feff: 70, fef: 0, gridEF: 0.8,
+  ccomp: 45000, bop: 30, inst: 20, om: 3, rate: 10, life: 15, esc_e: 3, esc_f: 4
+};
+function mvr(inp) {
+  const out = { ok: true, warn: [], err: [] };
+  const K = 273.15;
+  const T1 = inp.Tv + K, Tb = inp.Tv + inp.BPE + K, Tc = Tb + inp.dTa;
+  if (Tc > 170 + K) { out.ok = false; out.err.push("Condensing temperature above 170 C is outside the validity of the steam correlations."); return out; }
+  if (T1 < 40 + K) { out.ok = false; out.err.push("Vapour temperature below 40 C is not supported."); return out; }
+  const P1 = wPsat(T1), P2 = wPsat(Tc);
+  const E = inp.Evap * 1000 / 3600; // kg/s evaporated in the recompressed effect
+  // isentropic compression of saturated vapour at T1 to P2
+  const s1 = wSg(T1), h1 = wHg(T1);
+  const sg2 = wSg(Tc), hg2 = wHg(Tc);
+  const T2s = Tc * Math.exp((s1 - sg2) / WAT.cpv);
+  const h2s = hg2 + WAT.cpv * (T2s - Tc);
+  const ws = h2s - h1, w = ws / inp.etac;
+  const h2 = h1 + w, T2 = Tc + (h2 - hg2) / WAT.cpv;
+  // desuperheating with condensate at Tw
+  const hw = wHf(inp.Tw + K);
+  const mwFrac = Math.max(0, (h2 - hg2) / (hg2 - hw)); // kg water per kg compressed vapour
+  // evaporator duty: latent heat at boiling pressure plus feed sensible heat
+  const hfg1 = wHfg(T1);
+  const Qlat = E * hfg1;
+  const Qfeed = inp.Feed * 1000 / 3600 * inp.cpf * Math.max(0, Tb - K - inp.Tf);
+  const Qreq = (Qlat + Qfeed) * (1 + inp.loss / 100);
+  const hfg2 = wHfg(Tc);
+  const msteam = Qreq / hfg2;              // saturated steam condensed in the effect
+  const mcomp = E;                         // vapour compressed
+  const msup = msteam - mcomp;             // surplus steam to be made up (kg/s)
+  const mwInj = mcomp * mwFrac;            // steam generated by desuperheating
+  const mmake = Math.max(0, msteam - mcomp - mwInj); // live steam makeup at Tc
+  const Wsh = mcomp * w, Wel = Wsh / inp.etam;
+  const spec = Wel / (inp.Evap);           // kWh/t evaporated
+  const V1 = mcomp * wVg(T1) * 3600;       // m3/h inlet
+  const PR = P2 / P1;
+  // baseline: multi-effect evaporator at steam economy SE, steam at inp.steamP bar(a)
+  const Ts = wTsat(inp.steamP * 1e5);
+  const hfgS = wHfg(Ts);
+  const baseSteam = E / inp.SE;            // kg/s
+  const baseQ = baseSteam * hfgS;          // kW thermal steam
+  const baseFuel = baseQ / (inp.boilerEff / 100); // kW fuel
+  const mmakeQ = mmake * hfg2 / (inp.boilerEff / 100);
+  Object.assign(out, {
+    T1: T1 - K, Tb: Tb - K, Tc: Tc - K, T2: T2 - K, T2s: T2s - K, P1, P2, P1bar: P1 / 1e5, P2bar: P2 / 1e5, PR,
+    h1, h2, h2s, hg2, ws, w, E, Qlat, Qfeed, Qreq, msteam, mcomp, msup, mwInj, mwFrac, mmake,
+    Wsh, Wel, spec, V1, baseSteam, baseQ, baseFuel, mmakeQ, Ts: Ts - K, SEeff: E / msteam, copth: Qreq / Wel
+  });
+  if (PR > 2.2) out.warn.push("Pressure ratio " + PR.toFixed(2) + " is high for a single-stage MVR fan or blower. Use a multi-stage centrifugal or reduce the temperature difference.");
+  if (P1 < 0.5e5) out.warn.push("Vapour pressure is " + (P1 / 1e5).toFixed(2) + " bar(a). Inlet volume flow is large and compressor cost rises sharply.");
+  if (T2 - K > 220) out.warn.push("Discharge temperature is high. Use water injection upstream of the final stage.");
+  if (mmake > 0.02 * msteam) out.warn.push("Compressor heat and desuperheating cover only part of the steam duty. Live steam make-up of about " + (mmake * 3.6).toFixed(2) + " t/h at " + (Tc - K).toFixed(0) + " C is included in the costs.");
+  if (msup < -1e-9) out.warn.push("Compressed vapour exceeds the duty. Surplus steam must be vented to the next effect.");
+  return out;
+}
+function mvrEconomics(m, inp) {
+  const o = {};
+  const hrs = inp.hours * inp.lf / 100;
+  const baseFuelKwhYr = m.baseFuel * hrs;
+  const fuelPerKwhFuel = inp.fprice / inp.fkwh;
+  o.hrs = hrs;
+  o.baseCost = baseFuelKwhYr * fuelPerKwhFuel;
+  o.mmakeCost = m.mmakeQ * hrs * fuelPerKwhFuel;
+  o.elecKwh = m.Wel * hrs;
+  o.elecCost = o.elecKwh * inp.tariff;
+  o.capexComp = inp.ccomp * m.Wsh;
+  o.capex = o.capexComp * (1 + inp.bop / 100) * (1 + inp.inst / 100);
+  o.om = o.capex * inp.om / 100;
+  const N = inp.life, r = inp.rate / 100, ee = inp.esc_e / 100, ef = inp.esc_f / 100;
+  const cf = [-o.capex]; let npv = -o.capex, cum = -o.capex, pb = NaN;
+  o.cum = [cum];
+  for (let t = 1; t <= N; t++) {
+    const save = o.baseCost * Math.pow(1 + ef, t - 1);
+    const cost = (o.elecCost + o.om) * Math.pow(1 + ee, t - 1) + o.mmakeCost * Math.pow(1 + ef, t - 1);
+    const net = save - cost; cf.push(net);
+    const prev = cum; cum += net; npv += net / Math.pow(1 + r, t); o.cum.push(cum);
+    if (isNaN(pb) && cum >= 0) pb = (t - 1) + (net !== 0 ? -prev / net : 0);
+  }
+  o.cf = cf; o.npv = npv; o.pb = pb; o.net1 = cf[1];
+  const npvAt = rr => cf.reduce((s, c, t) => s + c / Math.pow(1 + rr, t), 0);
+  let lo = -0.9, hi = 5;
+  if (npvAt(lo) * npvAt(hi) < 0) { for (let i = 0; i < 80; i++) { const mid = (lo + hi) / 2; if (npvAt(mid) > 0) lo = mid; else hi = mid; } o.irr = (lo + hi) / 2; } else o.irr = NaN;
+  o.fuelSaved = (m.baseFuel - m.mmakeQ) * hrs; // kWh fuel / yr
+  o.co2 = (o.fuelSaved * inp.fef - o.elecKwh * inp.gridEF) / 1000;
+  return o;
+}
+
+// ---------- economics ----------
+function economics(d, inp) {
+  const o = {};
+  const hrs = inp.hours * inp.lf / 100;
+  const Qth = inp.Qc * hrs;
+  const El = d.Wtot * hrs;
+  o.Qth = Qth; o.El = El;
+  const equip = inp.chx * d.A_tot + inp.ccomp * d.Wsh;
+  o.equip = equip;
+  o.capex = equip * (1 + inp.bop / 100) * (1 + inp.inst / 100);
+  o.capexComp = inp.ccomp * d.Wsh; o.capexHx = inp.chx * d.A_tot;
+  o.spec = o.capex / inp.Qc;
+  const fuelPerKwhTh = inp.fprice / (inp.fkwh * inp.feff / 100);
+  o.fuelCostKwh = fuelPerKwhTh;
+  o.om = o.capex * inp.om / 100;
+  const N = inp.life, r = inp.rate / 100, ee = inp.esc_e / 100, ef = inp.esc_f / 100;
+  const cf = [-o.capex];
+  let pvHeat = 0, pvCostHp = o.capex, pvFuel = 0, npv = -o.capex, cum = -o.capex, cumD = -o.capex;
+  o.cum = [cum]; o.cumD = [cumD];
+  let dpb = NaN, pb = NaN;
+  for (let t = 1; t <= N; t++) {
+    const fuel = Qth * fuelPerKwhTh * Math.pow(1 + ef, t - 1);
+    const elec = El * inp.tariff * Math.pow(1 + ee, t - 1);
+    const om = o.om * Math.pow(1 + ee, t - 1);
+    const net = fuel - elec - om;
+    const df = Math.pow(1 + r, t);
+    cf.push(net);
+    npv += net / df;
+    const prev = cum, prevD = cumD;
+    cum += net; cumD += net / df;
+    if (isNaN(pb) && cum >= 0) pb = (t - 1) + (net !== 0 ? -prev / net : 0);
+    if (isNaN(dpb) && cumD >= 0) dpb = (t - 1) + (net / df !== 0 ? -prevD / (net / df) : 0);
+    o.cum.push(cum); o.cumD.push(cumD);
+    pvHeat += Qth / df; pvCostHp += (elec + om) / df; pvFuel += fuel / df;
+  }
+  o.cf = cf; o.npv = npv; o.pb = pb; o.dpb = dpb;
+  o.cf1 = cf[1];
+  o.simplePB = cf[1] > 0 ? o.capex / cf[1] : Infinity;
+  o.lcoh = pvCostHp / pvHeat; o.lcohRef = pvFuel / pvHeat;
+  const npvAt = rr => cf.reduce((s, c, t) => s + c / Math.pow(1 + rr, t), 0);
+  let lo = -0.9, hi = 5;
+  if (npvAt(lo) * npvAt(hi) < 0) {
+    for (let i = 0; i < 80; i++) { const mid = (lo + hi) / 2; if (npvAt(mid) > 0) lo = mid; else hi = mid; }
+    o.irr = (lo + hi) / 2;
+  } else o.irr = NaN;
+  o.elecCost1 = El * inp.tariff; o.fuelSave1 = Qth * fuelPerKwhTh;
+  o.co2fuel = Qth * (inp.fef / (inp.feff / 100)) / 1000;
+  o.co2hp = El * inp.gridEF / 1000;
+  o.co2save = o.co2fuel - o.co2hp;
+  o.breakEvenCOP = (inp.tariff / fuelPerKwhTh);
+  return o;
+}
+
+// ---------- helpers: sweeps, comparison, optimisation ----------
+function withInp(inp, patch) { return Object.assign({}, inp, patch); }
+
+function compareRefs(inp) {
+  const rows = [];
+  for (const name of Object.keys(REFS)) {
+    let d;
+    try { d = design(inp, name); } catch (e) { d = { ok: false, err: ["calc failed"] }; }
+    if (!d.ok || !d.cyc) { rows.push({ name, ok: false, why: (d.err || []).join(" ") }); continue; }
+    let ihx = false, pin = inp;
+    if (d.cyc.wet2 && (d.cyc.eco ? inp.SH < 15 : inp.eps < 0.5)) {
+      const p2 = withInp(inp, d.cyc.eco ? { SH: 15 } : { eps: 0.5 });
+      const d2 = design(p2, name);
+      if (d2.ok && d2.cyc && !d2.cyc.wet2) { d = d2; pin = p2; ihx = true; }
+    }
+    const e = economics(d, pin);
+    rows.push({ name, ihx, ok: true, feasible: d.feasible, COP: d.COP, Td: d.Td, Pe: d.Pe_bar, Pc: d.Pc_bar, PR: d.PR, V: d.Vsuc, A: d.A_tot, npv: e.npv, capex: e.capex, warn: d.warn, saf: REFS[name].saf, gwp: REFS[name].gwp, vhc: d.vhc });
+  }
+  return rows;
+}
+
+function sweep(inp, key, values) {
+  return values.map(x => {
+    const d = design(withInp(inp, { [key]: x }));
+    if (!d.ok || !d.cyc) return { x, COP: NaN, npv: NaN, lcoh: NaN };
+    const e = economics(d, withInp(inp, { [key]: x }));
+    return { x, COP: d.COP, npv: e.npv, lcoh: e.lcoh, Td: d.Td, A: d.A_tot, feasible: d.feasible };
+  });
+}
+
+function optimise(inp) {
+  let best = null;
+  const eco = inp.cyc === "flash" || inp.cyc === "sub";
+  const dTes = eco ? [3, 5, 8] : [3, 4, 5, 6, 8], dTcs = eco ? [3, 5, 8] : [3, 4, 5, 6, 8], SCs = eco ? [0, 4, 8] : [0, 2, 4, 6, 8], SHs = eco ? [3, 7, 12] : [3, 5, 7, 10], epss = eco ? [0] : [0, 0.4];
+  for (const dTe of dTes) for (const dTc of dTcs) for (const SC of SCs) for (const SH of SHs) for (const eps of epss) {
+    const p = withInp(inp, { dTe, dTc, SC, SH, eps });
+    let d;
+    try { d = design(p); } catch (e) { continue; }
+    if (!d.ok || !d.cyc || !d.feasible) continue;
+    const e = economics(d, p);
+    if (!best || e.npv > best.npv) best = { dTe, dTc, SC, SH, eps, npv: e.npv, COP: d.COP, A: d.A_tot, lcoh: e.lcoh };
+  }
+  return best;
+}
+
+function dome(f, n) {
+  const pts = [];
+  const Tmin = Math.max(0.52 * f.Tc, 200), Tmax = f.Tc - 0.6;
+  for (let i = 0; i <= n; i++) {
+    const T = Tmin + (Tmax - Tmin) * Math.pow(i / n, 0.8);
+    const s = satProps(f, T);
+    pts.push(s);
+  }
+  return pts;
+}
+
+if (typeof module !== "undefined") module.exports = { WAT, wPsat, wTsat, wHf, wHfg, wHg, wSg, MVRDEF, mvr, mvrEconomics, cycleEco, PRESETS, presetInputs, REFS, FUELS, DEF, state, satProps, Psat, cycle, design, economics, compareRefs, sweep, optimise, dome, withInp };
+
+</script>
+<script>
+const $=id=>document.getElementById(id);
+const f0=(v)=>Number.isFinite(v)?Math.round(v).toLocaleString("en-IN"):"–";
+const fx=(v,d)=>Number.isFinite(v)?v.toFixed(d):"–";
+function inr(v){if(!Number.isFinite(v))return"–";const a=Math.abs(v),s=v<0?"−":"";if(a>=1e7)return s+"₹ "+(a/1e7).toFixed(2)+" cr";if(a>=1e5)return s+"₹ "+(a/1e5).toFixed(1)+" lakh";return s+"₹ "+Math.round(a).toLocaleString("en-IN")}
+const C=x=>x-273.15;
+const CYCN={single:"Single stage",flash:"Two-stage, flash tank economizer",sub:"Economizer, subcooler with injection"};
+
+let inp=presetInputs("sugar"); let D=null,EC=null,OPT=null,currentTab="cycle";
+
+const SECTIONS=[
+ {t:"Heating duty and sink",open:true,f:[["Qc","Heating capacity","kW",1,50000,10],["Tki","Sink inlet temperature","°C",0,200,1],["Tko","Sink outlet temperature","°C",10,200,1],["cp_k","Sink specific heat","kJ/kg·K",0.5,10,0.01]]},
+ {t:"Heat source",open:true,f:[["Tsi","Source inlet temperature","°C",0,150,1],["Tso","Source outlet temperature","°C",0,150,1],["cp_s","Source specific heat","kJ/kg·K",0.5,10,0.01]]},
+ {t:"Cycle and refrigerant",open:true,f:[["@ref"],["@cyc"],["dTsub","Subcooler approach to intermediate saturation","K",1,20,0.5],["dTe","Evaporator approach at source outlet","K",1,30,0.5],["dTc","Condenser approach at condensing end","K",1,30,0.5],["SH","Suction superheat","K",0,40,0.5],["SC","Condenser subcooling","K",0,40,0.5],["eps","Internal heat exchanger effectiveness (single stage only)","0–0.9",0,0.9,0.05],["@desup"]]},
+ {t:"Compressor and limits",f:[["eta","Isentropic efficiency","–",0.3,0.95,0.01],["eta_em","Motor and drive efficiency","–",0.5,1,0.01],["etaV","Volumetric efficiency","–",0.4,1,0.01],["aux","Pumps and auxiliaries","% of power",0,30,0.5],["maxP","Max condensing pressure","bar",5,120,1],["maxTd","Max discharge temperature","°C",60,250,1],["maxPR","Max pressure ratio per stage","–",2,20,0.5]]},
+ {t:"Heat exchanger design",f:[["Ue","Evaporating U","kW/m²K",0.1,10,0.1],["Ush","Superheating U","kW/m²K",0.05,5,0.05],["Ucn","Condensing U","kW/m²K",0.1,10,0.1],["Uds","Desuperheating U","kW/m²K",0.05,5,0.05],["Usc","Subcooling U","kW/m²K",0.05,5,0.05],["margin","Area margin for fouling","%",0,50,1]]},
+ {t:"Operation and economics",f:[["hours","Operating hours per year","h",100,8760,50],["lf","Average load factor","%",10,100,1],["tariff","Electricity tariff","₹/kWh",0.5,30,0.1],["@fuel"],["fprice","Displaced fuel price","₹/unit",0.1,200000,0.5],["fkwh","Fuel energy content","kWh/unit",0.5,20000,0.1],["feff","Existing boiler efficiency","%",30,100,1],["fef","Fuel emission factor","kg CO₂/kWh",0,1,0.01],["gridEF","Grid emission factor","kg CO₂/kWh",0,1.5,0.01],["esc_e","Electricity price escalation","% per year",0,15,0.5],["esc_f","Fuel price escalation","% per year",0,15,0.5],["chx","Heat exchanger cost","₹/m²",1000,200000,500],["ccomp","Compressor package cost","₹/kW shaft",5000,500000,1000],["bop","Piping, controls, electrical","% of equipment",0,100,1],["inst","Installation and engineering","%",0,100,1],["om","Maintenance per year","% of capex",0,15,0.5],["rate","Discount rate","%",1,30,0.5],["life","Project life","years",3,30,1]]}
+];
+const FIELDMAP={};
+function buildForm(){
+  let h="";
+  for(const s of SECTIONS){
+    h+=`<details${s.open?" open":""}><summary>${s.t}</summary><div class="fields">`;
+    for(const fl of s.f){
+      if(fl[0]==="@ref"){h+=`<label class="f"><span>Refrigerant</span><select id="f_ref">${Object.keys(REFS).map(k=>`<option value="${k}">${k} (${REFS[k].saf})</option>`).join("")}</select></label>`;continue}
+      if(fl[0]==="@cyc"){h+=`<label class="f"><span>Cycle configuration</span><select id="f_cyc"><option value="single">Single stage</option><option value="flash">Two-stage with flash tank economizer</option><option value="sub">Economizer with subcooler and injection port</option></select></label>`;continue}
+      if(fl[0]==="@fuel"){h+=`<label class="f"><span>Displaced fuel</span><select id="f_fuel">${Object.keys(FUELS).map(k=>`<option value="${k}">${FUELS[k].n}</option>`).join("")}</select></label>`;continue}
+      if(fl[0]==="@desup"){h+=`<label class="chk"><input type="checkbox" id="f_desup"><span>Use desuperheater heat to lift sink outlet above condensing temperature</span></label>`;continue}
+      const [k,l,u,mn,mx,st]=fl;FIELDMAP[k]=fl;
+      h+=`<label class="f"><span>${l}</span><span class="ctl"><input type="number" id="f_${k}" min="${mn}" max="${mx}" step="${st}" inputmode="decimal"><em>${u}</em></span></label>`;
+    }
+    h+="</div></details>";
+  }
+  $("rail").innerHTML=h;
+}
+function cycUI(){
+  const c=inp.cyc||"single";
+  $("f_dTsub").closest("label").hidden=c!=="sub";
+  $("f_eps").closest("label").hidden=c!=="single";
+}
+function syncForm(){
+  for(const k in FIELDMAP)$("f_"+k).value=inp[k];
+  $("f_ref").value=inp.ref;$("f_cyc").value=inp.cyc||"single";cycUI();$("f_fuel").value=inp.fuel;$("f_desup").checked=!!inp.desup;
+}
+let raf=0;
+function schedule(){cancelAnimationFrame(raf);raf=requestAnimationFrame(update)}
+function bindForm(){
+  $("rail").addEventListener("input",e=>{
+    const t=e.target,id=t.id||"";
+    if(id==="f_ref"){inp.ref=t.value;schedule();return}
+    if(id==="f_cyc"){inp.cyc=t.value;cycUI();OPT=null;schedule();return}
+    if(id==="f_fuel"){inp.fuel=t.value;const fu=FUELS[t.value];inp.fprice=t.value==="elec"?inp.tariff:fu.price;inp.funit=fu.unit;inp.fkwh=fu.kwh;inp.feff=fu.eff;inp.fef=fu.ef;syncForm();schedule();return}
+    if(id==="f_desup"){inp.desup=t.checked;schedule();return}
+    if(id.startsWith("f_")){const k=id.slice(2),v=parseFloat(t.value);if(Number.isFinite(v)){inp[k]=v;schedule()}}
+  });
+}
+
+/* ---------- chart helpers ---------- */
+function niceTicks(a,b,n){const span=b-a;if(!(span>0))return[a];const raw=span/(n||6),mag=Math.pow(10,Math.floor(Math.log10(raw))),nm=raw/mag;const st=(nm<1.5?1:nm<3?2:nm<7?5:10)*mag;const t=[];for(let v=Math.ceil(a/st-1e-9)*st;v<=b+st*1e-6;v+=st){const q=+v.toPrecision(10);t.push(Math.abs(q)<st*1e-6?0:q)};return t}
+function logTicks(a,b){const t=[];for(let e=Math.floor(Math.log10(a));e<=Math.ceil(Math.log10(b));e++)for(const m of[1,2,5]){const v=m*Math.pow(10,e);if(v>=a*0.999&&v<=b*1.001)t.push(v)}return t}
+let plotId=0;
+function plot(o){
+  const W=640,H=o.H||320,m={l:58,r:16,t:14,b:44},pw=W-m.l-m.r,ph=H-m.t-m.b;
+  const lg=v=>Math.log10(v);
+  const sx=v=>m.l+(v-o.x0)/(o.x1-o.x0)*pw;
+  const sy=o.ylog?(v=>m.t+(1-(lg(v)-lg(o.y0))/(lg(o.y1)-lg(o.y0)))*ph):(v=>m.t+(1-(v-o.y0)/(o.y1-o.y0))*ph);
+  const id="clip"+(++plotId);
+  let s=`<svg class="plot" viewBox="0 0 ${W} ${H}" role="img" aria-label="${o.label}"><defs><clipPath id="${id}"><rect x="${m.l}" y="${m.t}" width="${pw}" height="${ph}"/></clipPath></defs>`;
+  const xt=niceTicks(o.x0,o.x1,7),yt=o.ylog?logTicks(o.y0,o.y1):niceTicks(o.y0,o.y1,6);
+  for(const v of xt){const x=sx(v);s+=`<line class="gl" x1="${x}" y1="${m.t}" x2="${x}" y2="${m.t+ph}"/><text x="${x}" y="${m.t+ph+16}" text-anchor="middle">${+v.toPrecision(6)}</text>`}
+  for(const v of yt){const y=sy(v);s+=`<line class="gl" x1="${m.l}" y1="${y}" x2="${m.l+pw}" y2="${y}"/><text x="${m.l-6}" y="${y+4}" text-anchor="end">${+v.toPrecision(6)}</text>`}
+  s+=`<rect x="${m.l}" y="${m.t}" width="${pw}" height="${ph}" fill="none" class="axl"/>`;
+  s+=`<text x="${m.l+pw/2}" y="${H-6}" text-anchor="middle" class="lgt">${o.xl}</text>`;
+  s+=`<text x="12" y="${m.t+ph/2}" text-anchor="middle" class="lgt" transform="rotate(-90 12 ${m.t+ph/2})">${o.yl}</text>`;
+  s+=`<g clip-path="url(#${id})">${o.draw(sx,sy)}</g>`;
+  if(o.over)s+=o.over(sx,sy,m,pw,ph);
+  return s+"</svg>";
+}
+const pl=(pts,sx,sy,cls)=>`<polyline class="ln ${cls}" points="${pts.map(p=>sx(p[0]).toFixed(1)+","+sy(p[1]).toFixed(1)).join(" ")}"/>`;
+const dot=(x,y,lab,dx,dy)=>`<circle cx="${x}" cy="${y}" r="3.8" class="fill-hot"/><text class="lb" x="${x+(dx||7)}" y="${y+(dy||-6)}">${lab}</text>`;
+
+function cyclePoints(){
+  const c=D.cyc,pts=[];
+  const ihx=inp.eps>0&&Math.abs(c.q_ihx)>1e-9;
+  return {ihx,c};
+}
+function pathStatesEco(kind){
+  const c=D.cyc,e=c.eco,Si=c.Si;
+  const X=kind==="ph"?(s=>s.h):(s=>s.s),Y=kind==="ph"?(s=>s.P/1e5):(s=>C(s.T));
+  const pt=s=>[X(s),Y(s)];
+  const sat=(S,w)=>kind==="ph"?[w==="v"?S.hv:S.hl,S.P/1e5]:[w==="v"?S.sv:S.sl,C(S.T)];
+  const x6=e.type==="flash"?(c.st3.h-Si.hl)/(Si.hv-Si.hl):0;
+  const v8={T:Si.T,P:Si.P,h:Si.hv,s:Si.sv},l7={T:Si.T,P:Si.P,h:Si.hl,s:Si.sl};
+  const s6={T:Si.T,P:Si.P,h:c.st3.h,s:Si.sl+x6*(Si.sv-Si.sl)};
+  const sa={T:Si.T,P:Si.P,h:c.st3.h,s:c.st3.s};
+  const A=[{p:pt(c.st1),n:"1",dx:7,dy:16},{p:pt(e.lp),n:"2a",dx:-24,dy:-6},{p:pt(e.mix),n:"M",dx:9,dy:4},{p:pt(c.st2),n:"2",dx:7,dy:-7},{p:pt(v8),n:"8",dx:-4,dy:16}];
+  const path=[pt(c.st1),pt(e.lp),pt(e.mix),pt(c.st2)];
+  if(!c.wet2)path.push(sat(c.Sc,"v"));
+  path.push(sat(c.Sc,"l"),pt(c.st3));A.push({p:pt(c.st3),n:"3",dx:-18,dy:-6});
+  const side=[];
+  if(e.type==="flash"){
+    path.push(pt(s6),pt(l7));A.push({p:pt(l7),n:"7",dx:-18,dy:14});
+    side.push([pt(s6),pt(v8),pt(e.mix)]);
+  }else{
+    path.push(pt(c.st3b));A.push({p:pt(c.st3b),n:"3′",dx:-20,dy:14});
+    side.push([pt(c.st3),pt(sa),pt(v8),pt(e.mix)]);
+  }
+  path.push(pt(c.st4));A.push({p:pt(c.st4),n:"4",dx:-18,dy:16});
+  path.push(pt(c.st1));
+  const iso=[pt(e.mix),kind==="ph"?[c.st2s.h,c.Pc/1e5]:[e.mix.s,C(c.st2s.T)]];
+  return {path,A,iso,side};
+}
+function pathStates(kind){
+  if(D.cyc.eco)return pathStatesEco(kind);
+  const c=D.cyc,ihx=inp.eps>0&&Math.abs(c.q_ihx)>1e-9;
+  const X=kind==="ph"?(s=>s.h):(s=>s.s),Y=kind==="ph"?(s=>s.P/1e5):(s=>C(s.T));
+  const pt=s=>[X(s),Y(s)];
+  const sat=(S,w)=>kind==="ph"?[w==="v"?S.hv:S.hl,S.P/1e5]:[w==="v"?S.sv:S.sl,C(S.T)];
+  const A=[];
+  A.push({p:pt(c.st1),n:"1"});
+  if(ihx)A.push({p:pt(c.st1b),n:"1′"});
+  A.push({p:pt(c.st2),n:"2"});
+  const path=[pt(c.st1b),pt(c.st2)];
+  if(!c.wet2)path.push(sat(c.Sc,"v"));
+  path.push(sat(c.Sc,"l"));
+  path.push(pt(c.st3));
+  A.push({p:pt(c.st3),n:"3"});
+  if(ihx){path.push(pt(c.st3b));A.push({p:pt(c.st3b),n:"3′"})}
+  path.push(pt(c.st4));A.push({p:pt(c.st4),n:"4"});
+  path.push(pt(c.st1));if(ihx)path.push(pt(c.st1b));
+  const iso=[pt(c.st1b),kind==="ph"?[c.st2s.h,c.Pc/1e5]:[c.st1b.s,C(c.st2s.T)]];
+  return {path,A,iso};
+}
+function drawPH(){
+  const c=D.cyc,f=D.f,dm=dome(f,60),ps=pathStates("ph");
+  const y0=Math.min(c.Pe,c.Pc)/1e5/1.7,y1=Math.max(c.Pe,c.Pc)/1e5*1.7;
+  const inR=dm.filter(s=>s.P/1e5>=y0*0.9&&s.P/1e5<=y1*1.1);
+  let xs=ps.path.map(p=>p[0]).concat(inR.map(s=>s.hl),inR.map(s=>s.hv));
+  let x0=Math.min(...xs),x1=Math.max(...xs);const pad=(x1-x0)*0.05;x0-=pad;x1+=pad;
+  const liq=dm.map(s=>[s.hl,s.P/1e5]),vap=dm.map(s=>[s.hv,s.P/1e5]).reverse();
+  return plot({label:"Pressure enthalpy diagram",x0,x1,y0,y1,ylog:true,xl:"Specific enthalpy, kJ/kg",yl:"Pressure, bar",
+    draw:(sx,sy)=>pl(liq.concat(vap),sx,sy,"l-mut")+pl(ps.path,sx,sy,"l-hot")+pl(ps.iso,sx,sy,"l-mut dash")+(ps.side||[]).map(g=>pl(g,sx,sy,"l-cold dash")).join("")+
+      `<line class="gl" x1="${sx(x0)}" x2="${sx(x1)}" y1="${sy(c.Pe/1e5)}" y2="${sy(c.Pe/1e5)}" style="stroke-dasharray:2 4"/><line class="gl" x1="${sx(x0)}" x2="${sx(x1)}" y1="${sy(c.Pc/1e5)}" y2="${sy(c.Pc/1e5)}" style="stroke-dasharray:2 4"/>`,
+    over:(sx,sy)=>ps.A.map(a=>dot(sx(a.p[0]).toFixed(1)*1,sy(a.p[1]).toFixed(1)*1,a.n,a.dx!==undefined?a.dx:(a.n==="4"||a.n==="3"||a.n==="3′"?-18:7),a.dy!==undefined?a.dy:(a.n==="1"||a.n==="1′"||a.n==="4"?16:-7))).join("")});
+}
+function drawTS(){
+  const c=D.cyc,f=D.f,dm=dome(f,60),ps=pathStates("ts");
+  const Tlo=Math.min(C(c.st4.T),C(c.st3b.T))-12,Thi=Math.max(C(c.st2.T),c.eco?C(c.eco.lp.T):0)+14;
+  const inR=dm.filter(s=>C(s.T)>=Tlo&&C(s.T)<=Thi);
+  let xs=ps.path.map(p=>p[0]).concat(inR.map(s=>s.sl),inR.map(s=>s.sv));
+  let x0=Math.min(...xs),x1=Math.max(...xs);const pad=(x1-x0)*0.06;x0-=pad;x1+=pad;
+  const liq=dm.map(s=>[s.sl,C(s.T)]),vap=dm.map(s=>[s.sv,C(s.T)]).reverse();
+  return plot({label:"Temperature entropy diagram",x0,x1,y0:Tlo,y1:Thi,xl:"Specific entropy, kJ/kg·K",yl:"Temperature, °C",
+    draw:(sx,sy)=>pl(liq.concat(vap),sx,sy,"l-mut")+pl(ps.path,sx,sy,"l-hot")+pl(ps.iso,sx,sy,"l-mut dash")+(ps.side||[]).map(g=>pl(g,sx,sy,"l-cold dash")).join(""),
+    over:(sx,sy)=>ps.A.map(a=>dot(+sx(a.p[0]).toFixed(1),+sy(a.p[1]).toFixed(1),a.n,a.dx!==undefined?a.dx:(a.n==="4"||a.n==="3"||a.n==="3′"?-18:7),a.dy!==undefined?a.dy:(a.n==="1"||a.n==="1′"||a.n==="4"?16:-7))).join("")});
+}
+function drawProfile(kind){
+  let ref,stream,xmax,yl,cls,lab1,lab2;
+  if(kind==="e"){
+    ref=[[0,C(D.Te)],[D.Qboil,C(D.Te)],[D.Qe,C(D.cyc.st1.T)]];
+    stream=[[0,inp.Tso],[D.Qboil,C(D.Tsb)],[D.Qe,inp.Tsi]];xmax=D.Qe;cls="l-cold";lab1="Refrigerant";lab2="Heat source";
+  }else{
+    ref=[[0,C(D.cyc.st2.T)]];let q=0;
+    if(D.Qds>1e-6){q=D.Qds;ref.push([q,C(D.Tcd)])}
+    q+=D.Qcn;ref.push([q,C(D.Tcd)]);q+=D.Qsc;ref.push([q,C(D.cyc.st3.T)]);
+    stream=[[0,inp.Tko],[D.Qds,C(D.Tb)],[D.Qds+D.Qcn,C(D.Ta)],[inp.Qc,inp.Tki]];
+    if(D.Qds<=1e-6)stream[0]=[0,C(D.Tb)];
+    xmax=inp.Qc;cls="l-hot";lab1="Refrigerant";lab2="Heat sink";
+  }
+  const ys=ref.concat(stream).map(p=>p[1]);let y0=Math.min(...ys),y1=Math.max(...ys);const pd=(y1-y0)*0.12+1;y0-=pd;y1+=pd;
+  return plot({label:(kind==="e"?"Evaporator":"Condenser")+" temperature profile",x0:0,x1:xmax,y0,y1,H:300,xl:"Heat transferred, kW",yl:"Temperature, °C",
+    draw:(sx,sy)=>pl(ref,sx,sy,cls)+pl(stream,sx,sy,"l-ink dash"),
+    over:(sx,sy,m)=>`<text class="lgt" x="${m.l+10}" y="${m.t+16}" style="fill:var(--${kind==="e"?"cold":"hot"})">— ${lab1}</text><text class="lgt" x="${m.l+10}" y="${m.t+32}">- - ${lab2}</text>`});
+}
+function drawSeries(o){
+  const ys=o.series.flatMap(s=>s.pts.map(p=>p[1])).filter(Number.isFinite);
+  if(!ys.length)return '<p class="note">No valid points in this range.</p>';
+  const xs=o.series.flatMap(s=>s.pts.map(p=>p[0]));
+  let x0=Math.min(...xs),x1=Math.max(...xs),y0=Math.min(...ys,o.zero?0:Infinity),y1=Math.max(...ys,o.zero?0:-Infinity);
+  const pd=(y1-y0)*0.1||1;y0-=pd;y1+=pd;if(o.series.length>1)y1+=(y1-y0)*0.22;
+  return plot({label:o.label,x0,x1,y0,y1,H:o.H||280,xl:o.xl,yl:o.yl,
+    draw:(sx,sy)=>(o.zero?`<line class="axl" x1="${sx(x0)}" x2="${sx(x1)}" y1="${sy(0)}" y2="${sy(0)}"/>`:"")+
+      (o.vline!=null?`<line class="gl" x1="${sx(o.vline)}" x2="${sx(o.vline)}" y1="${sy(y0)}" y2="${sy(y1)}" style="stroke:var(--muted);stroke-dasharray:3 4"/>`:"")+
+      o.series.map(s=>{const segs=[];let cur=[];for(const p of s.pts){if(Number.isFinite(p[1]))cur.push(p);else{if(cur.length)segs.push(cur);cur=[]}}if(cur.length)segs.push(cur);return segs.map(g=>pl(g,sx,sy,s.cls)).join("")+s.pts.filter(p=>Number.isFinite(p[1])).map(p=>`<circle cx="${sx(p[0]).toFixed(1)}" cy="${sy(p[1]).toFixed(1)}" r="2.6" class="${s.cls==="l-hot"?"fill-hot":"fill-cold"}"/>`).join("")}).join(""),
+    over:(sx,sy,m)=>o.series.length>1?o.series.map((s,i)=>`<text class="lgt" x="${m.l+10}" y="${m.t+16+i*16}" style="fill:var(--${s.cls==="l-hot"?"hot":"cold"})">— ${s.name}</text>`).join(""):""});
+}
+
+/* ---------- renderers ---------- */
+function renderKPIs(){
+  const e=EC;
+  const pb=Number.isFinite(e.simplePB)&&e.simplePB<=inp.life?fx(e.simplePB,1)+" y":"> "+inp.life+" y";
+  $("kpis").innerHTML=
+   `<div class="kpi hot"><b>Heating COP</b><strong>${fx(D.COP,2)}</strong><small>${fx(D.eta2*100,0)}% of Lorenz limit ${fx(D.lorenz,1)}</small></div>`+
+   `<div class="kpi"><b>Electric input</b><strong>${fx(D.Wtot,0)} kW</strong><small>Compressor shaft ${fx(D.Wsh,0)} kW</small></div>`+
+   `<div class="kpi cold"><b>Heat from source</b><strong>${fx(D.Qe,0)} kW</strong><small>Source flow ${fx(D.msrc,1)} kg/s</small></div>`+
+   `<div class="kpi"><b>Evap → cond</b><strong>${fx(D.Tevap_C,0)} → ${fx(D.Tcond_C,0)} °C</strong><small>${fx(D.Pe_bar,1)} → ${fx(D.Pc_bar,1)} bar, ${D.cyc.eco?"stages "+fx(D.cyc.eco.PRlp,1)+" and "+fx(D.cyc.eco.PRhp,1):"ratio "+fx(D.PR,1)}</small></div>`+
+   `<div class="kpi"><b>Discharge temp</b><strong>${fx(D.Td,0)} °C</strong><small>Limit ${inp.maxTd} °C</small></div>`+
+   `<div class="kpi ${e.npv>0?"":""}"><b>Simple payback</b><strong>${pb}</strong><small>NPV ${inr(e.npv)}</small></div>`;
+}
+function renderMsgs(errs){
+  let h="";
+  if(errs&&errs.length)h=errs.map(m=>`<div class="msg bad">${m}</div>`).join("");
+  else{
+    if(D.warn.length)h+=D.warn.map(m=>`<div class="msg warn">${m}</div>`).join("");
+    h+=D.feasible?`<div class="msg ok">Design is within the pressure, temperature and heat exchanger limits you set.</div>`:`<div class="msg bad">Design is outside one or more limits. Try another refrigerant in the Compare tab or run the optimiser.</div>`;
+    if(EC.npv<0)h+=`<div class="msg warn">At these prices the heat pump does not pay back. It needs a fuel cost above ${fx(inp.tariff/D.COP,2)} ₹/kWh of heat. The displaced fuel costs ${fx(EC.fuelCostKwh,2)} ₹/kWh.</div>`;
+  }
+  $("msgs").innerHTML=h;
+}
+function renderCycle(){
+  const m=D.m,tot=inp.Qc,qe=D.Qe,w=D.Wsh;
+  $("bal").innerHTML=`<div class="c" style="width:${qe/tot*100}%">Source heat ${fx(qe,0)} kW</div><div class="w" style="width:${w/tot*100}%">${w/tot>0.12?"Compressor "+fx(w,0)+" kW":""}</div>`;
+  $("balcap").innerHTML=`<span>Delivered to sink: ${fx(tot,0)} kW</span><span>Compressor ${fx(w,0)} kW · motor and drive losses ${fx(D.Wel-D.Wsh,1)} kW · auxiliaries ${fx(D.Waux,1)} kW</span>`;
+  const c=D.cyc,ihx=inp.eps>0&&Math.abs(c.q_ihx)>1e-9,rows=[];
+  const R=(n,d,s,x)=>rows.push([n,d,C(s.T),s.P/1e5,s.h,s.s,s.v,x]);
+  R("1","Evaporator outlet",c.st1,inp.SH>0?"superheated vapour":"saturated vapour");
+  if(c.eco){
+    const e=c.eco,Si=c.Si;
+    R("2a","First-stage discharge",e.lp,"at "+fx(c.Pi/1e5,2)+" bar");
+    R("8",e.type==="flash"?"Flash vapour from tank":"Injection vapour from subcooler",{T:Si.T,P:Si.P,h:Si.hv,s:Si.sv,v:Si.vv},"saturated vapour");
+    R("M","Second-stage suction after mixing",e.mix,e.mix.x!==undefined?"wet":"superheated vapour");
+    R("2s","Isentropic discharge, second stage",{T:c.st2s.T,P:c.Pc,h:c.st2s.h,s:e.mix.s,v:NaN},c.wetS?"wet":"vapour");
+    R("2","Second-stage discharge",c.st2,c.wet2?"wet, x = "+fx(c.st2.x,2):"superheated vapour");
+    R("3","Condenser outlet",c.st3,inp.SC>0?"subcooled liquid":"saturated liquid");
+    if(e.type==="flash")R("7","Saturated liquid from flash tank",{T:Si.T,P:Si.P,h:Si.hl,s:Si.sl,v:Si.vl},"saturated liquid");
+    else R("3′","Subcooler outlet",c.st3b,"subcooled liquid");
+    R("4","Evaporator inlet",c.st4,"x = "+fx(c.x4,3));
+  }else{
+  if(ihx)R("1′","Compressor inlet after IHX",c.st1b,"superheated vapour");
+  R("2s","Isentropic discharge",{T:c.st2s.T,P:c.Pc,h:c.st2s.h,s:c.st1b.s,v:NaN},c.wetS?"wet":"vapour");
+  R("2","Compressor discharge",c.st2,c.wet2?"wet, x = "+fx(c.st2.x,2):"superheated vapour");
+  R("3","Condenser outlet",c.st3,inp.SC>0?"subcooled liquid":"saturated liquid");
+  if(ihx)R("3′","Expansion valve inlet after IHX",c.st3b,"subcooled liquid");
+  R("4","Evaporator inlet",c.st4,"x = "+fx(c.x4,3));
+  }
+  $("states").innerHTML=`<table><thead><tr><th>State</th><th class="l">Point</th><th>T °C</th><th>P bar</th><th>h kJ/kg</th><th>s kJ/kg·K</th><th>v m³/kg</th><th class="l">Phase</th></tr></thead><tbody>`+
+    rows.map(r=>`<tr><td>${r[0]}</td><td class="l">${r[1]}</td><td>${fx(r[2],1)}</td><td>${fx(r[3],2)}</td><td>${fx(r[4],1)}</td><td>${fx(r[5],4)}</td><td>${Number.isFinite(r[6])?fx(r[6],4):"–"}</td><td class="l">${r[7]}</td></tr>`).join("")+"</tbody></table>";
+  const M=(a,b)=>`<div class="m"><span>${a}</span><span>${b}</span></div>`;
+  $("metrics").innerHTML=
+   `<div>`+M("Refrigerant",`${D.f.n} (${D.f.saf}, GWP ${D.f.gwp})`)+M("Cycle",CYCN[D.cycType])+(c.eco?M("Intermediate pressure",fx(c.Pi/1e5,2)+" bar at "+fx(C(c.eco.Ti),1)+" °C")+M("Evaporator flow fraction",fx(c.fe*100,1)+" %")+M("First and second stage work",fx(m*c.eco.wLP,1)+" and "+fx(m*c.eco.wHP,1)+" kW"):"")+M("Condenser mass flow",fx(m,3)+" kg/s")+M(c.eco?"First-stage suction volume":"Suction volume flow",f0(D.Vsuc)+" m³/h")+M("Volumetric heating capacity",f0(D.vhc)+" kJ/m³")+M("Heating per kg",fx(c.qc,1)+" kJ/kg")+M("Compressor work per kg",fx(c.w,1)+" kJ/kg")+`</div>`+
+   `<div>`+M("Heating COP, with auxiliaries",fx(D.COP,2))+M("Heating COP, compressor only",fx(D.COPc,2))+M("Carnot COP at cycle temperatures",fx(D.carnot,2))+M("Lorenz COP for the two streams",fx(D.lorenz,2))+M("Second-law efficiency vs Lorenz",fx(D.eta2*100,1)+" %")+M("Temperature lift",fx(D.lift,1)+" K")+`</div>`+
+   `<div>`+M("Sink flow",fx(D.msnk,2)+" kg/s")+M("Source flow",fx(D.msrc,2)+" kg/s")+M("Desuperheating duty",fx(D.Qds,1)+" kW")+M("Condensing duty",fx(D.Qcn,1)+" kW")+M("Subcooling duty",fx(D.Qsc,1)+" kW")+M("IHX duty",fx(D.m*c.q_ihx,1)+" kW")+`</div>`;
+}
+function renderHX(){
+  const Z=D.zones;
+  $("zones").innerHTML=`<table><thead><tr><th class="l">Zone</th><th>Duty kW</th><th>ΔT hot end K</th><th>ΔT cold end K</th><th>LMTD K</th><th>U kW/m²K</th><th>Area m²</th></tr></thead><tbody>`+
+   Z.map(z=>`<tr><td class="l">${z.name}</td><td>${fx(z.Q,1)}</td><td>${fx(z.dTh,1)}</td><td>${fx(z.dTc,1)}</td><td>${fx(z.lmtd,2)}</td><td>${fx(z.U,2)}</td><td>${isFinite(z.Areq)?fx(z.Areq,1):"cross"}</td></tr>`).join("")+
+   `<tr class="tot"><td class="l">Evaporator total</td><td></td><td></td><td></td><td></td><td></td><td>${fx(D.A_e,1)}</td></tr><tr class="tot"><td class="l">Condenser total</td><td></td><td></td><td></td><td></td><td></td><td>${fx(D.A_c,1)}</td></tr></tbody></table>`;
+  $("hxnote").textContent=`Areas include a ${inp.margin}% margin. Sink flow ${fx(D.msnk,2)} kg/s heated from ${inp.Tki} to ${inp.Tko} °C; source flow ${fx(D.msrc,2)} kg/s cooled from ${inp.Tsi} to ${inp.Tso} °C. Counter-current flow is assumed in every zone.`;
+  $("pe").innerHTML=drawProfile("e");$("pc").innerHTML=drawProfile("c");
+}
+function renderEcon(){
+  const e=EC,L=inp.life;
+  const pb=Number.isFinite(e.simplePB)&&e.simplePB<=L?fx(e.simplePB,1)+" years":"None in "+L+" years";
+  $("ekpis").innerHTML=
+   `<div class="kpi"><b>Capital cost</b><strong>${inr(e.capex)}</strong><small>${f0(e.spec)} ₹ per kW of heat</small></div>`+
+   `<div class="kpi hot"><b>Net saving, year 1</b><strong>${inr(e.cf1)}</strong><small>Fuel ${inr(e.fuelSave1)} less electricity ${inr(e.elecCost1)}</small></div>`+
+   `<div class="kpi"><b>Simple payback</b><strong>${pb}</strong><small>Discounted ${Number.isFinite(e.dpb)?fx(e.dpb,1)+" years":"none"}</small></div>`+
+   `<div class="kpi"><b>NPV at ${inp.rate}%</b><strong>${inr(e.npv)}</strong><small>IRR ${Number.isFinite(e.irr)?fx(e.irr*100,1)+" %":"not defined"}</small></div>`+
+   `<div class="kpi cold"><b>CO₂ avoided</b><strong>${f0(e.co2save)} t/yr</strong><small>Fuel ${f0(e.co2fuel)} t less grid ${f0(e.co2hp)} t</small></div>`;
+  const row=(a,b,c)=>`<tr><td class="l">${a}</td><td>${b}</td><td>${c}</td></tr>`;
+  const sh=x=>fx(x/e.capex*100,0)+" %";
+  $("capex").innerHTML=`<table><thead><tr><th class="l">Item</th><th>Cost</th><th>Share</th></tr></thead><tbody>`+
+   row("Compressor package ("+fx(D.Wsh,0)+" kW shaft)",inr(e.capexComp),sh(e.capexComp*(1+inp.bop/100)*(1+inp.inst/100)))+
+   row("Heat exchangers ("+fx(D.A_tot,0)+" m²)",inr(e.capexHx),sh(e.capexHx*(1+inp.bop/100)*(1+inp.inst/100)))+
+   row("Piping, controls, electrical",inr(e.equip*inp.bop/100),sh(e.equip*inp.bop/100*(1+inp.inst/100)))+
+   row("Installation and engineering",inr(e.equip*(1+inp.bop/100)*inp.inst/100),sh(e.equip*(1+inp.bop/100)*inp.inst/100))+
+   `<tr class="tot"><td class="l">Total</td><td>${inr(e.capex)}</td><td>100 %</td></tr></tbody></table>`;
+  const hp=inp.tariff/D.COP;
+  const M=(a,b)=>`<div class="m"><span>${a}</span><span>${b}</span></div>`;
+  $("heatcost").innerHTML=M("Heat pump, electricity only",fx(hp,2)+" ₹/kWh")+M("Displaced fuel at the boiler",fx(e.fuelCostKwh,2)+" ₹/kWh")+M("Heat pump, levelised incl. capital",fx(e.lcoh,2)+" ₹/kWh")+M("Fuel, levelised over project life",fx(e.lcohRef,2)+" ₹/kWh")+M("Break-even COP at today's prices",fx(e.breakEvenCOP,2))+M("Heat delivered per year",f0(e.Qth/1000)+" MWh")+M("Electricity per year",f0(e.El/1000)+" MWh");
+  const yrs=e.cum.map((_,i)=>i);
+  $("cash").innerHTML=drawSeries({label:"Cumulative cash flow",xl:"Year",yl:"₹ crore",zero:true,series:[{name:"Undiscounted",cls:"l-hot",pts:yrs.map(i=>[i,e.cum[i]/1e7])},{name:"Discounted",cls:"l-cold",pts:yrs.map(i=>[i,e.cumD[i]/1e7])}]});
+}
+function renderCycCmp(){
+  const rows=["single","flash","sub"].map(cy=>{
+    const p=Object.assign({},inp,{cyc:cy});let d=design(p);
+    if(!d.ok||!d.cyc)return{cy,ok:false};
+    const e=economics(d,p);
+    return{cy,ok:true,d,e};
+  });
+  const best=Math.max(...rows.filter(r=>r.ok&&r.d.feasible).map(r=>r.e.npv),-Infinity);
+  $("cyccmp").innerHTML=`<table><thead><tr><th class="l">Cycle</th><th>COP</th><th>Electric kW</th><th>T disch °C</th><th>Ratio per stage</th><th>P intermediate bar</th><th>Suction m³/h</th><th>HX m²</th><th>Capital</th><th>NPV</th><th class="l">Status</th><th></th></tr></thead><tbody>`+
+   rows.map(r=>{
+     if(!r.ok)return `<tr><td class="l">${CYCN[r.cy]}</td><td colspan="10" class="l">Not applicable</td><td></td></tr>`;
+     const d=r.d,st=d.feasible?(r.e.npv===best?'<span class="pill ok">best NPV</span>':'<span class="pill ok">within limits</span>'):'<span class="pill bad">outside limits</span>';
+     return `<tr class="${r.cy===inp.cyc?"cur":""}"><td class="l"><b>${CYCN[r.cy]}</b></td><td>${fx(d.COP,2)}</td><td>${fx(d.Wtot,0)}</td><td>${fx(d.Td,0)}</td><td>${fx(d.PRs,1)}</td><td>${d.cyc.eco?fx(d.cyc.Pi/1e5,2):"–"}</td><td>${f0(d.Vsuc)}</td><td>${fx(d.A_tot,0)}</td><td>${inr(r.e.capex)}</td><td>${inr(r.e.npv)}</td><td class="l">${st}</td><td><button class="sm" data-cyc="${r.cy}">Use</button></td></tr>`}).join("")+"</tbody></table>";
+}
+function renderCompare(){
+  renderCycCmp();
+  const rows=compareRefs(inp);
+  rows.sort((a,b)=>(b.ok&&b.feasible)-(a.ok&&a.feasible)||(b.COP||0)-(a.COP||0));
+  const mx=Math.max(...rows.filter(r=>r.ok).map(r=>r.COP));
+  $("cmp").innerHTML=`<table><thead><tr><th class="l">Refrigerant</th><th>Safety</th><th>GWP</th><th>COP</th><th></th><th>T disch °C</th><th>P evap bar</th><th>P cond bar</th><th>Ratio</th><th>Suction m³/h</th><th>HX m²</th><th>NPV</th><th class="l">Status</th><th></th></tr></thead><tbody>`+
+   rows.map(r=>{
+     if(!r.ok)return `<tr><td class="l">${r.name}</td><td colspan="12" class="l">${r.why||"Not applicable"}</td><td></td></tr>`;
+     const st=r.feasible?(r.ihx?'<span class="pill warn">needs IHX</span>':'<span class="pill ok">within limits</span>'):'<span class="pill bad">outside limits</span>';
+     return `<tr class="${r.name===inp.ref?"cur":""}"><td class="l"><b>${r.name}</b></td><td>${r.saf}</td><td>${r.gwp}</td><td>${fx(r.COP,2)}</td><td><span class="bar" style="width:${(r.COP/mx*60).toFixed(0)}px"></span></td><td>${fx(r.Td,0)}</td><td>${fx(r.Pe,1)}</td><td>${fx(r.Pc,1)}</td><td>${fx(r.PR,1)}</td><td>${f0(r.V)}</td><td>${fx(r.A,0)}</td><td>${inr(r.npv)}</td><td class="l">${st}</td><td><button class="sm" data-ref="${r.name}${r.ihx?"|ihx":""}">Use</button></td></tr>`}).join("")+"</tbody></table>";
+}
+const SW=[
+ ["Tko","Sink outlet temperature, °C",b=>[b-20,b+10]],["Tso","Source outlet temperature, °C",b=>[b-12,b+12]],["dTe","Evaporator approach, K",b=>[2,12]],["dTc","Condenser approach, K",b=>[2,12]],
+ ["SH","Suction superheat, K",b=>[0,15]],["SC","Subcooling, K",b=>[0,15]],["eta","Compressor isentropic efficiency",b=>[0.55,0.85]],["eps","IHX effectiveness",b=>[0,0.8]],["tariff","Electricity tariff, ₹/kWh",b=>[b*0.5,b*1.5]],["fprice","Displaced fuel price, ₹/unit",b=>[b*0.5,b*1.5]]
+];
+function renderSweep(){
+  const k=$("swvar").value,d=SW.find(s=>s[0]===k),[lo,hi]=d[2](inp[k]);
+  const vals=Array.from({length:13},(_,i)=>+(lo+(hi-lo)*i/12).toFixed(4));
+  const res=sweep(inp,k,vals);
+  $("sw1").innerHTML=drawSeries({label:"COP sensitivity",xl:d[1],yl:"Heating COP",vline:inp[k],series:[{name:"COP",cls:"l-hot",pts:res.map(r=>[r.x,r.COP])}]});
+  $("sw2").innerHTML=drawSeries({label:"NPV sensitivity",xl:d[1],yl:"NPV, ₹ crore",vline:inp[k],zero:true,series:[{name:"NPV",cls:"l-cold",pts:res.map(r=>[r.x,r.npv/1e7])}]});
+}
+function renderOptResult(){
+  if(!OPT){$("optres").innerHTML="";return}
+  const o=OPT,cur=inp;
+  const r=(n,a,b)=>`<tr><td class="l">${n}</td><td>${a}</td><td>${b}</td></tr>`;
+  $("optres").innerHTML=`<table><thead><tr><th class="l">Parameter</th><th>Current</th><th>Optimum</th></tr></thead><tbody>`+
+   r("Evaporator approach, K",fx(cur.dTe,1),fx(o.dTe,1))+r("Condenser approach, K",fx(cur.dTc,1),fx(o.dTc,1))+r("Subcooling, K",fx(cur.SC,1),fx(o.SC,1))+r("Suction superheat, K",fx(cur.SH,1),fx(o.SH,1))+r("IHX effectiveness",fx(cur.eps,2),fx(o.eps,2))+
+   r("Heating COP",fx(D.COP,2),fx(o.COP,2))+r("Heat exchanger area, m²",fx(D.A_tot,0),fx(o.A,0))+r("NPV",inr(EC.npv),inr(o.npv))+
+   `</tbody></table><div class="btnrow" style="margin-top:8px"><button class="b" id="applyopt">Apply optimum</button></div>`;
+  $("applyopt").onclick=()=>{Object.assign(inp,{dTe:o.dTe,dTc:o.dTc,SC:o.SC,SH:o.SH,eps:o.eps});OPT=null;syncForm();update()};
+}
+
+/* ---------- report ---------- */
+function reportData(){
+  const e=EC,c=D.cyc,S=[];
+  S.push(["Design basis",[["Application preset",$("preset").selectedOptions[0].textContent,""],["Refrigerant",D.f.n,""],["Cycle configuration",CYCN[D.cycType],""],["Heating capacity",inp.Qc,"kW"],["Sink",inp.Tki+" to "+inp.Tko,"°C"],["Source",inp.Tsi+" to "+inp.Tso,"°C"],["Evaporator and condenser approach",inp.dTe+" and "+inp.dTc,"K"],["Superheat and subcooling",inp.SH+" and "+inp.SC,"K"],["IHX effectiveness",inp.eps,""]]]);
+  S.push(["Cycle performance",[["Evaporating temperature",fx(D.Tevap_C,1),"°C"],["Condensing temperature",fx(D.Tcond_C,1),"°C"],["Evaporating pressure",fx(D.Pe_bar,2),"bar"],["Condensing pressure",fx(D.Pc_bar,2),"bar"],["Pressure ratio, overall",fx(D.PR,2),""],...(D.cyc.eco?[["Intermediate pressure",fx(D.cyc.Pi/1e5,2),"bar"],["Pressure ratio, first and second stage",fx(D.cyc.eco.PRlp,2)+" and "+fx(D.cyc.eco.PRhp,2),""],["Evaporator flow fraction",fx(D.cyc.fe*100,1),"%"]]:[]),["Discharge temperature",fx(D.Td,1),"°C"],["Refrigerant mass flow",fx(D.m,3),"kg/s"],["Suction volume flow",fx(D.Vsuc,0),"m3/h"],["Heat from source",fx(D.Qe,1),"kW"],["Compressor shaft power",fx(D.Wsh,1),"kW"],["Electric input incl. auxiliaries",fx(D.Wtot,1),"kW"],["Heating COP",fx(D.COP,2),""],["Lorenz COP",fx(D.lorenz,2),""],["Second-law efficiency",fx(D.eta2*100,1),"%"]]]);
+  S.push(["Heat exchangers",D.zones.map(z=>[z.name,fx(z.Q,1)+" kW, LMTD "+fx(z.lmtd,2)+" K, U "+fx(z.U,2),isFinite(z.Areq)?fx(z.Areq,1)+" m2":"temperature cross"]).concat([["Total area",fx(D.A_tot,1),"m2"]])]);
+  S.push(["Economics",[["Capital cost",f0(e.capex),"INR"],["Net saving, year 1",f0(e.cf1),"INR"],["Simple payback",Number.isFinite(e.simplePB)?fx(e.simplePB,1):"none","years"],["NPV at "+inp.rate+"%",f0(e.npv),"INR"],["IRR",Number.isFinite(e.irr)?fx(e.irr*100,1):"n/a","%"],["Levelised heat cost, heat pump",fx(e.lcoh,2),"INR/kWh"],["Levelised heat cost, displaced fuel",fx(e.lcohRef,2),"INR/kWh"],["Heat delivered per year",f0(e.Qth/1000),"MWh"],["Electricity per year",f0(e.El/1000),"MWh"],["CO2 avoided",f0(e.co2save),"t/year"]]]);
+  S.push(["Warnings",D.warn.length?D.warn.map(w=>["",w,""]):[["","None",""]]]);
+  return S;
+}
+function stateRows(){
+  const c=D.cyc,ihx=inp.eps>0&&Math.abs(c.q_ihx)>1e-9,rows=[["State","T C","P bar","h kJ/kg","s kJ/kg.K"]];
+  const R=(n,s,sv)=>rows.push([n,fx(C(s.T),2),fx(s.P/1e5,3),fx(s.h,2),fx(sv!==undefined?sv:s.s,4)]);
+  R("1",c.st1);
+  if(c.eco){const Si=c.Si;R("2a",c.eco.lp);R("8",{T:Si.T,P:Si.P,h:Si.hv},Si.sv);R("M",c.eco.mix);R("2s",{T:c.st2s.T,P:c.Pc,h:c.st2s.h},c.eco.mix.s);R("2",c.st2);R("3",c.st3);if(c.eco.type==="flash")R("7",{T:Si.T,P:Si.P,h:Si.hl},Si.sl);else R("3p",c.st3b);R("4",c.st4);return rows}
+  if(ihx)R("1p",c.st1b);R("2s",{T:c.st2s.T,P:c.Pc,h:c.st2s.h},c.st1b.s);R("2",c.st2);R("3",c.st3);if(ihx)R("3p",c.st3b);R("4",c.st4);return rows;
+}
+function reportText(){
+  let t="HEATPUMP DESIGNER PRO - DESIGN REPORT\n"+"=".repeat(40)+"\n\n";
+  for(const [h,rows] of reportData()){t+=h.toUpperCase()+"\n";for(const r of rows)t+="  "+(r[0]?r[0].padEnd(38):"")+String(r[1]).padEnd(14)+(r[2]||"")+"\n";t+="\n"}
+  t+="STATE POINTS\n"+stateRows().map(r=>"  "+r.map((x,i)=>String(x).padEnd(i?12:8)).join("")).join("\n")+"\n\nProperties: Peng-Robinson EOS, preliminary accuracy. Verify with REFPROP or CoolProp before purchase.\n";
+  return t;
+}
+function reportCSV(){
+  const q=x=>'"'+String(x).replace(/"/g,'""')+'"';let t="Section,Item,Value,Unit\n";
+  for(const [h,rows] of reportData())for(const r of rows)t+=[q(h),q(r[0]),q(r[1]),q(r[2]||"")].join(",")+"\n";
+  t+="\nState points\n"+stateRows().map(r=>r.map(q).join(",")).join("\n")+"\n";return t;
+}
+function reportHTML(){
+  const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;");
+  let h=`<!doctype html><meta charset="utf-8"><title>Heat pump design report</title><style>body{font:14px/1.5 Arial,sans-serif;max-width:820px;margin:24px auto;color:#13202A}h1{font-size:22px}h2{font-size:15px;text-transform:uppercase;border-bottom:2px solid #13202A;margin-top:22px}table{border-collapse:collapse;width:100%}td,th{border-bottom:1px solid #ccd;padding:4px 8px;text-align:left}td:nth-child(2){font-family:monospace}</style><h1>Heat pump design report</h1>`;
+  for(const [t,rows] of reportData()){h+=`<h2>${esc(t)}</h2><table>`+rows.map(r=>`<tr><td>${esc(r[0])}</td><td>${esc(r[1])}</td><td>${esc(r[2]||"")}</td></tr>`).join("")+"</table>"}
+  h+=`<h2>State points</h2><table>`+stateRows().map((r,i)=>"<tr>"+r.map(x=>i?`<td>${esc(x)}</td>`:`<th>${esc(x)}</th>`).join("")+"</tr>").join("")+"</table><p style=\"color:#5A6A77\">Properties from the Peng-Robinson equation of state, preliminary accuracy. Verify with REFPROP or CoolProp before purchase.</p>";
+  return h;
+}
+let DL=null;
+async function save(name,data){
+  const m=$("repmsg");
+  if(!DL){m.textContent="Saving files is not available here. Use Copy text instead.";return}
+  try{const r=await DL.save({filename:name,data});m.textContent=r.status==="saved"?"Saved "+name:"Delivered";}
+  catch(e){m.textContent=e&&e.code==="declined"?"Save cancelled.":"Could not save: "+((e&&e.message)||"unavailable")}
+}
+async function copyText(){
+  const t=$("reptxt");
+  try{await navigator.clipboard.writeText(t.value);$("repmsg").textContent="Copied to clipboard"}
+  catch(e){t.focus();t.select();$("repmsg").textContent="Select and copy the text above"}
+}
+
+
+/* ---------- MVR ---------- */
+let mv=Object.assign({},MVRDEF);
+const MVSECTIONS=[
+ {t:"Evaporator duty",open:true,f:[["Evap","Water evaporated in this effect","t/h",0.1,200,0.1],["Feed","Feed flow to the effect","t/h",0,500,0.5],["Tf","Feed temperature","°C",20,160,1],["cpf","Feed specific heat","kJ/kg·K",2,4.2,0.05]]},
+ {t:"Boiling and lift",open:true,f:[["Tv","Vapour saturation temperature","°C",40,150,1],["BPE","Boiling point elevation","K",0,15,0.5],["dTa","Steam to boiling liquid ΔT","K",2,30,0.5],["loss","Heat loss and venting","%",0,15,0.5]]},
+ {t:"Compressor",open:true,f:[["etac","Isentropic efficiency","–",0.4,0.9,0.01],["etam","Motor and drive efficiency","–",0.7,1,0.01],["Tw","Desuperheating water temperature","°C",20,150,1]]},
+ {t:"Existing steam supply",f:[["SE","Steam economy of existing evaporation","kg/kg",0.9,6,0.1],["steamP","Existing steam pressure","bar(a)",1.2,12,0.1],["boilerEff","Boiler efficiency","%",30,100,1]]},
+ {t:"Economics",f:[["hours","Operating hours per year","h",100,8760,50],["lf","Average load factor","%",10,100,1],["tariff","Electricity tariff","₹/kWh",0.5,30,0.1],["fprice","Fuel price","₹/unit",0.1,200000,0.5],["fkwh","Fuel energy content","kWh/unit",0.5,20000,0.1],["feff","Fuel efficiency in boiler basis","%",30,100,1],["fef","Fuel emission factor","kg CO₂/kWh",0,1,0.01],["gridEF","Grid emission factor","kg CO₂/kWh",0,1.5,0.01],["ccomp","Compressor package cost","₹/kW shaft",5000,500000,1000],["bop","Piping, controls, electrical","%",0,100,1],["inst","Installation and engineering","%",0,100,1],["om","Maintenance per year","% of capex",0,15,0.5],["esc_e","Electricity escalation","% per year",0,15,0.5],["esc_f","Fuel escalation","% per year",0,15,0.5],["rate","Discount rate","%",1,30,0.5],["life","Project life","years",3,30,1]]}
+];
+const MVMAP={};
+function buildMVForm(){
+  let h="";
+  for(const sec of MVSECTIONS){
+    h+=`<details${sec.open?" open":""}><summary>${sec.t}</summary><div class="fields">`;
+    for(const fl of sec.f){const [k,l,u,mn,mx,st]=fl;MVMAP[k]=fl;
+      h+=`<label class="f"><span>${l}</span><span class="ctl"><input type="number" id="m_${k}" min="${mn}" max="${mx}" step="${st}" inputmode="decimal"><em>${u}</em></span></label>`}
+    h+="</div></details>";
+  }
+  $("mvform").innerHTML=h;
+  $("mvform").addEventListener("input",e=>{const id=e.target.id||"";if(!id.startsWith("m_"))return;const v=parseFloat(e.target.value);if(Number.isFinite(v)){mv[id.slice(2)]=v;schedule()}});
+}
+function syncMV(){for(const k in MVMAP)$("m_"+k).value=mv[k]}
+function wst(T,x){ /* water state helper for tables, T in K */ return {T,P:wPsat(T),h:wHg(T),s:wSg(T)} }
+function drawMVTS(M){
+  const Ts=[];for(let t=40;t<=175;t+=5)Ts.push(t+273.15);
+  const liq=Ts.map(T=>[wSf(T),C(T)]),vap=Ts.map(T=>[wSg(T),C(T)]).reverse();
+  const T1=M.T1+273.15,Tc=M.Tc+273.15,Tb=M.Tb+273.15;
+  const s1=wSg(T1),sc=wSg(Tc),sf=wSf(Tc);
+  const path=[[s1,M.T1],[s1,M.T2s],[sc+WAT.cpv*Math.log((M.T2+273.15)/Tc),M.T2],[sc,M.Tc],[sf,M.Tc]];
+  const cp=[[s1,M.T1],[sc+WAT.cpv*Math.log((M.T2+273.15)/Tc),M.T2]];
+  const iso=[[s1,M.T1],[s1,M.T2s]];
+  const y0=Math.min(M.T1,M.Tb)-25,y1=M.T2+12;
+  const inR=Ts.filter(T=>C(T)>=y0&&C(T)<=y1);
+  const xs=inR.map(T=>wSf(T)).concat(inR.map(T=>wSg(T)),path.map(p=>p[0]));
+  let x0=Math.min(...xs),x1=Math.max(...xs);const pad=(x1-x0)*0.05;x0-=pad;x1+=pad;
+  return plot({label:"Steam compression path",x0,x1,y0,y1,H:300,xl:"Specific entropy, kJ/kg·K",yl:"Temperature, °C",
+    draw:(sx,sy)=>pl(liq.concat(vap),sx,sy,"l-mut")+pl([cp[0],[cp[1][0],cp[1][1]]],sx,sy,"l-hot")+pl(path.slice(2),sx,sy,"l-hot")+pl(iso,sx,sy,"l-mut dash")+
+      `<line class="gl" x1="${sx(x0)}" x2="${sx(x1)}" y1="${sy(M.Tb)}" y2="${sy(M.Tb)}" style="stroke-dasharray:2 4"/>`,
+    over:(sx,sy)=>dot(sx(path[0][0]),sy(path[0][1]),"1",7,16)+dot(sx(path[2][0]),sy(path[2][1]),"2",7,-6)+dot(sx(path[3][0]),sy(path[3][1]),"3",7,14)+dot(sx(path[4][0]),sy(path[4][1]),"4",-16,-6)+`<text class="lgt" x="${sx(x0)+8}" y="${sy(M.Tb)-5}">Boiling liquid ${fx(M.Tb,1)} °C</text>`});
+}
+function renderMVR(){
+  const M=mvr(mv);
+  if(!M.ok){$("mvmsgs").innerHTML=M.err.map(m=>`<div class="msg bad">${m}</div>`).join("");$("mvkpis").innerHTML="";for(const id of["mvstates","mvcmp","mvts","mvcash","mvsw1","mvsw2"])$(id).innerHTML="";return}
+  const E=mvrEconomics(M,mv);
+  const pb=Number.isFinite(E.pb)&&E.pb<=mv.life?fx(E.pb,1)+" y":"> "+mv.life+" y";
+  $("mvkpis").innerHTML=
+   `<div class="kpi hot"><b>Specific power</b><strong>${fx(M.spec,1)}</strong><small>kWh electric per tonne evaporated</small></div>`+
+   `<div class="kpi"><b>Compressor</b><strong>${fx(M.Wsh,0)} kW</strong><small>${fx(M.P1bar,2)} → ${fx(M.P2bar,2)} bar, ratio ${fx(M.PR,2)}</small></div>`+
+   `<div class="kpi cold"><b>Steam saved</b><strong>${fx((M.baseSteam-M.mmake)*3.6,2)} t/h</strong><small>Existing ${fx(M.baseSteam*3.6,2)} t/h, make-up ${fx(M.mmake*3.6,2)} t/h</small></div>`+
+   `<div class="kpi"><b>Simple payback</b><strong>${pb}</strong><small>NPV ${inr(E.npv)}</small></div>`+
+   `<div class="kpi"><b>Capital cost</b><strong>${inr(E.capex)}</strong><small>IRR ${Number.isFinite(E.irr)?fx(E.irr*100,1)+" %":"not defined"}</small></div>`;
+  $("mvmsgs").innerHTML=M.warn.map(m=>`<div class="msg warn">${m}</div>`).join("");
+  const rows=[
+   ["1","Vapour from the effect",M.T1,M.P1bar,M.h1,"saturated"],
+   ["2s","Isentropic discharge",M.T2s,M.P2bar,M.h2s,"superheated"],
+   ["2","Compressor discharge",M.T2,M.P2bar,M.h2,"superheated"],
+   ["3","After desuperheating",M.Tc,M.P2bar,M.hg2,"saturated vapour"]];
+  $("mvstates").innerHTML=`<table><thead><tr><th>State</th><th class="l">Point</th><th>T °C</th><th>P bar</th><th>h kJ/kg</th><th class="l">Phase</th></tr></thead><tbody>`+rows.map(r=>`<tr><td>${r[0]}</td><td class="l">${r[1]}</td><td>${fx(r[2],1)}</td><td>${fx(r[3],3)}</td><td>${fx(r[4],0)}</td><td class="l">${r[5]}</td></tr>`).join("")+`</tbody></table><div class="metrics" style="margin-top:8px;grid-template-columns:1fr">`+
+   [["Boiling liquid temperature",fx(M.Tb,1)+" °C"],["Steam condensing temperature",fx(M.Tc,1)+" °C"],["Isentropic work",fx(M.ws,1)+" kJ/kg"],["Actual work",fx(M.w,1)+" kJ/kg"],["Inlet volume flow",f0(M.V1)+" m³/h"],["Desuperheating water",fx(M.mwFrac*100,1)+" % of vapour"]].map(a=>`<div class="m"><span>${a[0]}</span><span>${a[1]}</span></div>`).join("")+"</div>";
+  const r2=(a,b,c)=>`<tr><td class="l">${a}</td><td>${b}</td><td>${c}</td></tr>`;
+  $("mvcmp").innerHTML=`<table><thead><tr><th class="l">Item</th><th>Existing steam</th><th>MVR</th></tr></thead><tbody>`+
+   r2("Live steam, t/h",fx(M.baseSteam*3.6,2),fx(M.mmake*3.6,2))+
+   r2("Fuel heat, kW",f0(M.baseFuel),f0(M.mmakeQ))+
+   r2("Electricity, kW","0",f0(M.Wel))+
+   r2("Fuel cost per year",inr(E.baseCost),inr(E.mmakeCost))+
+   r2("Electricity cost per year","–",inr(E.elecCost))+
+   `<tr class="tot"><td class="l">Net saving, year 1</td><td></td><td>${inr(E.net1)}</td></tr>`+
+   r2("Equivalent steam economy",fx(mv.SE,1),M.mmake>1e-9?fx(M.E/M.mmake,1):"–")+
+   r2("CO₂ avoided, t per year","",f0(E.co2))+
+   `</tbody></table>`;
+  $("mvts").innerHTML=drawMVTS(M);
+  $("mvcash").innerHTML=drawSeries({label:"MVR cumulative cash flow",xl:"Year",yl:"₹ crore",zero:true,series:[{name:"Cumulative",cls:"l-hot",pts:E.cum.map((v,i)=>[i,v/1e7])}]});
+  const xs=Array.from({length:13},(_,i)=>3+i*1.5),res=xs.map(x=>{const p=Object.assign({},mv,{dTa:x}),m2=mvr(p);if(!m2.ok)return{x,spec:NaN,npv:NaN};return{x,spec:m2.spec,npv:mvrEconomics(m2,p).npv}});
+  $("mvsw1").innerHTML=drawSeries({label:"Specific power sensitivity",xl:"Steam to liquid ΔT, K",yl:"kWh per tonne",vline:mv.dTa,series:[{name:"kWh/t",cls:"l-hot",pts:res.map(r=>[r.x,r.spec])}]});
+  $("mvsw2").innerHTML=drawSeries({label:"MVR NPV sensitivity",xl:"Steam to liquid ΔT, K",yl:"NPV, ₹ crore",vline:mv.dTa,zero:true,series:[{name:"NPV",cls:"l-cold",pts:res.map(r=>[r.x,r.npv/1e7])}]});
+}
+
+/* ---------- saved projects ---------- */
+const PKEY="hpd.projects.v1";let PMEM=[];let PSTORE=true;
+function loadProjects(){
+  try{const t=localStorage.getItem(PKEY);const a=t?JSON.parse(t):[];PSTORE=true;return Array.isArray(a)?a:[]}
+  catch(e){PSTORE=false;return PMEM}
+}
+function writeProjects(a){
+  PMEM=a;
+  try{localStorage.setItem(PKEY,JSON.stringify(a));PSTORE=true}catch(e){PSTORE=false}
+}
+function sumProject(p){
+  try{
+    const pin=Object.assign({},DEF,p.inp),d=design(pin);
+    if(!d.ok||!d.cyc)return null;
+    const e=economics(d,pin);
+    const m=mvr(Object.assign({},MVRDEF,p.mv)),me=m.ok?mvrEconomics(m,Object.assign({},MVRDEF,p.mv)):null;
+    return{d,e,pin,m,me};
+  }catch(e){return null}
+}
+function renderProjects(){
+  const list=loadProjects();
+  if(!list.length){$("prjlist").innerHTML=`<p class="note">No saved projects yet. Name the current design above and save it.${PSTORE?"":" Browser storage is unavailable here, so projects last only until the page closes. Use Export to keep them."}</p>`;return}
+  $("prjlist").innerHTML=`<table><thead><tr><th class="l">Project</th><th class="l">Cycle</th><th class="l">Refrigerant</th><th>Heat kW</th><th>COP</th><th>Capital</th><th>NPV</th><th>Payback</th><th>MVR kWh/t</th><th>MVR NPV</th><th></th></tr></thead><tbody>`+
+   list.map(p=>{
+     const r=sumProject(p);
+     const dt=p.saved?new Date(p.saved).toLocaleDateString("en-IN",{day:"numeric",month:"short",year:"numeric"}):"";
+     if(!r)return `<tr><td class="l"><b>${esc(p.name)}</b><br><small>${dt}</small></td><td colspan="9" class="l">Could not be calculated</td><td><button class="sm" data-del="${p.id}">Delete</button></td></tr>`;
+     const pb=Number.isFinite(r.e.simplePB)&&r.e.simplePB<=r.pin.life?fx(r.e.simplePB,1)+" y":"none";
+     return `<tr class="${p.id===curPrj?"cur":""}"><td class="l"><b>${esc(p.name)}</b><br><small style="color:var(--muted)">${dt}</small></td><td class="l">${CYCN[r.d.cycType]}</td><td class="l">${esc(r.pin.ref)}</td><td>${f0(r.pin.Qc)}</td><td>${fx(r.d.COP,2)}</td><td>${inr(r.e.capex)}</td><td>${inr(r.e.npv)}</td><td>${pb}</td><td>${r.m.ok?fx(r.m.spec,1):"–"}</td><td>${r.me?inr(r.me.npv):"–"}</td><td><button class="sm" data-load="${p.id}">Load</button> <button class="sm" data-del="${p.id}">Delete</button></td></tr>`}).join("")+"</tbody></table>"+
+   (PSTORE?"":`<p class="note" style="margin-top:8px">Browser storage is unavailable here. Projects last only until the page closes. Use Export to keep them.</p>`);
+}
+const esc=s=>String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/"/g,"&quot;");
+let curPrj=null;
+function pmsg(t){$("prjmsg").textContent=t}
+function saveProject(){
+  const name=($("prjname").value||"").trim()||("Design "+new Date().toLocaleString("en-IN",{day:"numeric",month:"short",hour:"2-digit",minute:"2-digit"}));
+  const list=loadProjects();
+  const ex=list.find(p=>p.name.toLowerCase()===name.toLowerCase());
+  const rec={id:ex?ex.id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name,saved:Date.now(),preset:$("preset").value,inp:Object.assign({},inp),mv:Object.assign({},mv)};
+  if(ex)list[list.indexOf(ex)]=rec;else list.unshift(rec);
+  writeProjects(list.slice(0,40));curPrj=rec.id;
+  pmsg(ex?"Updated “"+name+"”.":"Saved “"+name+"”.");renderProjects();
+}
+function loadProject(id){
+  const p=loadProjects().find(x=>x.id===id);if(!p)return;
+  inp=Object.assign({},DEF,p.inp);mv=Object.assign({},MVRDEF,p.mv);OPT=null;curPrj=id;
+  try{if([...$("preset").options].some(o=>o.value===p.preset))$("preset").value=p.preset}catch(e){}
+  $("prjname").value=p.name;syncForm();syncMV();update();pmsg("Loaded “"+p.name+"”.");
+}
+function deleteProject(id){
+  const list=loadProjects().filter(p=>p.id!==id);writeProjects(list);if(curPrj===id)curPrj=null;renderProjects();pmsg("Deleted.");
+}
+async function exportProjects(){
+  const list=loadProjects();
+  if(!list.length){pmsg("Nothing to export yet.");return}
+  if(!DL){pmsg("Saving files is not available here.");return}
+  try{const r=await DL.save({filename:"heatpump-projects.json",data:JSON.stringify({app:"HeatPump Designer Pro",version:2,projects:list},null,1)});pmsg(r.status==="saved"?"Exported "+list.length+" project(s).":"Delivered.")}
+  catch(e){pmsg(e&&e.code==="declined"?"Export cancelled.":"Could not export: "+((e&&e.message)||"unavailable"))}
+}
+function importProjects(file){
+  if(!file)return;
+  const rd=new FileReader();
+  rd.onload=()=>{
+    try{
+      const j=JSON.parse(rd.result);const arr=Array.isArray(j)?j:j.projects;
+      if(!Array.isArray(arr))throw new Error("no projects");
+      const list=loadProjects();let n=0;
+      for(const p of arr){if(!p||typeof p.inp!=="object"||typeof p.name!=="string")continue;
+        const rec={id:"p"+Date.now().toString(36)+Math.random().toString(36).slice(2,6),name:p.name.slice(0,60),saved:p.saved||Date.now(),preset:p.preset||"default",inp:p.inp,mv:p.mv||{}};
+        const ex=list.findIndex(x=>x.name.toLowerCase()===rec.name.toLowerCase());
+        if(ex>=0)list[ex]=rec;else list.push(rec);n++}
+      writeProjects(list.slice(0,40));renderProjects();pmsg("Imported "+n+" project(s).");
+    }catch(e){pmsg("That file is not a valid projects export.")}
+  };
+  rd.readAsText(file);
+}
+
+/* ---------- main ---------- */
+function update(){
+  renderMVR();
+  D=design(inp);
+  if(!D.ok){renderMsgs(D.err);for(const id of["kpis","p_cycle","p_diag","p_hx","p_econ","p_cmp","p_opt","p_rep"])$(id).classList.add("stale");return}
+  for(const id of["kpis","p_cycle","p_diag","p_hx","p_econ","p_cmp","p_opt","p_rep"])$(id).classList.remove("stale");
+  EC=economics(D,inp);
+  renderKPIs();renderMsgs();
+  renderCycle();
+  $("ph").innerHTML=drawPH();$("ts").innerHTML=drawTS();
+  renderHX();renderEcon();renderCompare();renderSweep();renderOptResult();
+  $("reptxt").value=reportText();
+}
+const TABS=[["cycle","Cycle","p_cycle"],["diag","Diagrams","p_diag"],["hx","Heat exchangers","p_hx"],["econ","Economics","p_econ"],["cmp","Compare","p_cmp"],["opt","Optimise","p_opt"],["mvr","MVR","p_mvr"],["prj","Projects","p_prj"],["rep","Report","p_rep"]];
+function showTab(id){
+  currentTab=id;if(id==="prj")renderProjects();
+  for(const t of TABS){$(t[2]).hidden=t[0]!==id;const b=$("tab_"+t[0]);b.setAttribute("aria-selected",t[0]===id?"true":"false");b.tabIndex=t[0]===id?0:-1}
+  try{sessionStorage.setItem("hpTab",id)}catch(e){}
+}
+function init(){
+  buildForm();bindForm();buildMVForm();syncMV();
+  $("prjsave").onclick=saveProject;$("prjexp").onclick=exportProjects;
+  $("prjimp").addEventListener("change",e=>{importProjects(e.target.files&&e.target.files[0]);e.target.value=""});
+  $("prjlist").addEventListener("click",e=>{const l=e.target.closest("button[data-load]"),d=e.target.closest("button[data-del]");if(l)loadProject(l.dataset.load);else if(d)deleteProject(d.dataset.del)});
+  $("preset").innerHTML=`<option value="default">Generic process heat, 500 kW</option>`+PRESETS.map(p=>`<option value="${p.id}">${p.n}</option>`).join("");
+  $("preset").value="sugar";
+  $("preset").addEventListener("change",e=>{inp=e.target.value==="default"?Object.assign({},DEF):presetInputs(e.target.value);OPT=null;syncForm();update()});
+  $("tabs").innerHTML=TABS.map(t=>`<button role="tab" id="tab_${t[0]}" aria-controls="${t[2]}">${t[1]}</button>`).join("");
+  $("tabs").addEventListener("click",e=>{const b=e.target.closest("button");if(b)showTab(b.id.slice(4))});
+  $("swvar").innerHTML=SW.map(s=>`<option value="${s[0]}">${s[1]}</option>`).join("");
+  $("swvar").addEventListener("change",()=>{if(D&&D.ok)renderSweep()});
+  $("cmp").addEventListener("click",e=>{const b=e.target.closest("button[data-ref]");if(!b)return;const [n,i]=b.dataset.ref.split("|");inp.ref=n;if(i){if(inp.cyc==="single"){if(inp.eps<0.5)inp.eps=0.5}else inp.SH=Math.max(inp.SH,15)}syncForm();update()});
+  $("cyccmp").addEventListener("click",e=>{const b=e.target.closest("button[data-cyc]");if(!b)return;inp.cyc=b.dataset.cyc;OPT=null;syncForm();update()});
+  $("optbtn").addEventListener("click",()=>{$("optmsg").textContent="Searching design combinations…";setTimeout(()=>{OPT=optimise(inp);$("optmsg").textContent=OPT?"Best design found.":"No design inside the limits was found. Relax the limits or change the refrigerant.";renderOptResult()},30)});
+  $("dlcsv").onclick=()=>save("heat-pump-design.csv",reportCSV());
+  $("dlhtml").onclick=()=>save("heat-pump-design-report.html",reportHTML());
+  $("cpy").onclick=copyText;
+  syncForm();update();
+  let t="cycle";try{t=sessionStorage.getItem("hpTab")||"cycle"}catch(e){}
+  showTab(TABS.some(x=>x[0]===t)?t:"cycle");
+  if(window.claude&&window.claude.use){window.claude.use("downloads").then(d=>{DL=d;if(!d){$("dlcsv").hidden=true;$("dlhtml").hidden=true;$("prjexp").hidden=true}}).catch(()=>{$("dlcsv").hidden=true;$("dlhtml").hidden=true;$("prjexp").hidden=true})}
+}
+init();
+</script>
+
+</body></html>
